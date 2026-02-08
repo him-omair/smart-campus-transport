@@ -36,7 +36,7 @@
     }
     
     .leaflet-container {
-      background: #1a1a2e;
+      background: #1a3a1a;
     }
     
     .gradient-dark {
@@ -1161,9 +1161,20 @@
         zoomControl: false
       }).setView(MOSUL_CENTER, 15);
 
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-        attribution: '© OpenStreetMap',
+      // Satellite imagery base layer
+      L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        attribution: 'Tiles © Esri',
         maxZoom: 19
+      }).addTo(studentMap);
+
+      // Roads and labels overlay
+      L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}', {
+        maxZoom: 19,
+        opacity: 0.6
+      }).addTo(studentMap);
+      L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {
+        maxZoom: 19,
+        opacity: 0.8
       }).addTo(studentMap);
 
       // Add zone markers
@@ -1372,9 +1383,20 @@
         zoomControl: false
       }).setView(MOSUL_CENTER, 15);
 
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-        attribution: '© OpenStreetMap',
+      // Satellite imagery base layer
+      L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        attribution: 'Tiles © Esri',
         maxZoom: 19
+      }).addTo(driverMap);
+
+      // Roads and labels overlay
+      L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}', {
+        maxZoom: 19,
+        opacity: 0.6
+      }).addTo(driverMap);
+      L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {
+        maxZoom: 19,
+        opacity: 0.8
       }).addTo(driverMap);
 
       // Add zone markers
@@ -1604,7 +1626,6 @@
       sorted.forEach((driver) => {
         const rankLabel = driver.points >= 200 ? '⭐ متميز' : driver.points >= 100 ? '✅ جيد' : '📊 مبتدئ';
         const typeIcon = driver.user_type === 'bus-driver' ? '🚌' : '🚗';
-
         const card = document.createElement('div');
         card.className = 'gradient-card rounded-lg p-3 border border-slate-700/50';
         card.innerHTML =
