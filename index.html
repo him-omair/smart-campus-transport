@@ -184,6 +184,20 @@
       box-shadow: 0 4px 15px rgba(0,0,0,0.3);
       cursor: pointer;
     }
+
+    @keyframes pulse-ring {
+      0% { transform: scale(0.8); opacity: 1; }
+      100% { transform: scale(2); opacity: 0; }
+    }
+
+    .pulse-marker {
+      animation: pulse-ring 2s ease-out infinite;
+    }
+
+    .ai-hint {
+      background: linear-gradient(145deg, rgba(139,92,246,0.15) 0%, rgba(59,130,246,0.1) 100%);
+      border: 1px solid rgba(139,92,246,0.3);
+    }
   </style>
 </head>
 <body class="h-full gradient-dark text-white overflow-auto">
@@ -473,32 +487,46 @@
       <!-- Request Tab -->
       <div id="student-request-tab" class="view-hidden">
         <div class="mb-4 p-3 rounded-lg bg-blue-500/10 border border-blue-500/30">
-          <p class="text-blue-300 text-xs">💡 اضغط على الخريطة لتحديد وجهتك</p>
+          <p class="text-blue-300 text-xs">💡 اضغط على الخريطة لتحديد وجهتك - الحافلات والسيارات تتحرك مباشرة</p>
         </div>
 
         <div id="student-map" class="h-96 rounded-lg mb-4 border border-slate-700/50"></div>
-        
+
+        <!-- Live Transport Stats -->
         <div class="gradient-card rounded-lg p-4 border border-slate-700/50 mb-4">
-          <p class="text-slate-400 text-xs mb-2">الوجهة</p>
-          <p id="request-destination" class="text-white font-bold mb-4">اختر وجهة</p>
-          
-          <div class="space-y-2 mb-4">
-            <p class="text-slate-400 text-xs">عدد السائقين القريبين</p>
-            <div class="flex gap-2">
-              <div class="flex-1 text-center py-2 rounded-lg bg-slate-800/50">
-                <p class="text-lg font-bold text-blue-400">2</p>
-                <p class="text-xs text-slate-400">حافلات</p>
-              </div>
-              <div class="flex-1 text-center py-2 rounded-lg bg-slate-800/50">
-                <p class="text-lg font-bold text-amber-400">3</p>
-                <p class="text-xs text-slate-400">سيارات</p>
-              </div>
+          <div class="flex items-center gap-2 mb-3">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 status-live"></span>
+            <p class="text-slate-400 text-xs font-bold">وسائل النقل المباشرة</p>
+          </div>
+          <div class="grid grid-cols-3 gap-2 mb-3">
+            <div class="text-center py-2 rounded-lg bg-slate-800/50">
+              <p id="live-bus-count" class="text-lg font-bold text-emerald-400">3</p>
+              <p class="text-xs text-slate-400">🚌 حافلات</p>
+            </div>
+            <div class="text-center py-2 rounded-lg bg-slate-800/50">
+              <p id="live-car-count" class="text-lg font-bold text-amber-400">4</p>
+              <p class="text-xs text-slate-400">🚗 سيارات</p>
+            </div>
+            <div class="text-center py-2 rounded-lg bg-slate-800/50">
+              <p id="live-eta" class="text-lg font-bold text-blue-400">3د</p>
+              <p class="text-xs text-slate-400">أقرب وصول</p>
             </div>
           </div>
-          
+
+          <p class="text-slate-400 text-xs mb-2">الوجهة</p>
+          <p id="request-destination" class="text-white font-bold mb-4">اختر وجهة</p>
+
           <button id="request-button" onclick="requestRide()" class="w-full py-3 rounded-lg btn-primary text-white font-bold">
             طلب توصيل
           </button>
+        </div>
+
+        <!-- AI Insights -->
+        <div class="mb-4">
+          <p class="text-slate-400 text-xs font-bold mb-2">🤖 تحليلات الذكاء الاصطناعي</p>
+          <div id="student-ai-hints" class="space-y-2">
+            <!-- AI hints will be populated here -->
+          </div>
         </div>
       </div>
       
@@ -533,12 +561,42 @@
     
     <div class="flex-1 overflow-auto">
       <!-- Map Tab -->
-      <div id="driver-map-tab" class="h-full">
-        <div id="driver-map" class="h-full"></div>
+      <div id="driver-map-tab" class="h-full flex flex-col">
+        <div id="driver-map" class="flex-1" style="min-height: 350px;"></div>
+        <!-- Driver AI Alert Banner -->
+        <div id="driver-ai-alert" class="p-3 bg-gradient-to-r from-red-500/10 to-orange-500/10 border-t border-red-500/30">
+          <p class="text-white font-bold text-xs">⚠️ تنبيه ذكي: طلب عالي!</p>
+          <p id="driver-alert-text" class="text-slate-300 text-xs">~8 طلاب متوقعين في منطقتك خلال 10 دقائق</p>
+        </div>
+        <!-- Driver Stats -->
+        <div class="p-3 bg-slate-900/50 border-t border-slate-800">
+          <div class="grid grid-cols-3 gap-2">
+            <div class="text-center">
+              <p id="driver-nearby-students" class="text-xl font-bold text-blue-400">0</p>
+              <p class="text-slate-500 text-xs">طلاب قريبون</p>
+            </div>
+            <div class="text-center">
+              <p id="driver-active-requests" class="text-xl font-bold text-amber-400">0</p>
+              <p class="text-slate-500 text-xs">طلبات نشطة</p>
+            </div>
+            <div class="text-center">
+              <p id="driver-suggested-route" class="text-xl font-bold text-emerald-400">--</p>
+              <p class="text-slate-500 text-xs">المسار</p>
+            </div>
+          </div>
+        </div>
       </div>
-      
+
       <!-- Requests Tab -->
       <div id="driver-requests-tab" class="view-hidden p-4">
+        <!-- AI Insights for driver -->
+        <div class="mb-4">
+          <p class="text-slate-400 text-xs font-bold mb-2">🤖 تحليلات الذكاء الاصطناعي</p>
+          <div id="driver-ai-hints" class="space-y-2">
+            <!-- AI hints will be populated here -->
+          </div>
+        </div>
+        <p class="text-slate-400 text-xs font-bold mb-2">📋 طلبات التوصيل</p>
         <div id="driver-requests-list" class="space-y-3">
           <!-- Requests will be populated here -->
         </div>
@@ -664,6 +722,58 @@
     let customLocationMarker = null;
     let studentMap = null;
     let driverMap = null;
+
+    // Simulation state
+    let simulationIntervals = [];
+    let simBusMarkers = [];
+    let simCarMarkers = [];
+    let simStudentMarkers = [];
+    let busRouteLines = [];
+
+    // Bus route data (predefined routes through campus)
+    const busRoutes = [
+      {
+        id: 1, name: 'خط باب الصناعة - باب الزراعة',
+        points: [
+          [36.3420, 43.1180], [36.3425, 43.1185], [36.3430, 43.1190],
+          [36.3435, 43.1195], [36.3440, 43.1198], [36.3445, 43.1200], [36.3450, 43.1200]
+        ],
+        color: '#10b981'
+      },
+      {
+        id: 2, name: 'خط باب العلوم - المركز الطلابي',
+        points: [
+          [36.3400, 43.1170], [36.3405, 43.1175], [36.3410, 43.1185],
+          [36.3415, 43.1195], [36.3420, 43.1205], [36.3425, 43.1210]
+        ],
+        color: '#3b82f6'
+      },
+      {
+        id: 3, name: 'خط باب الاستشارية - المكتبة المركزية',
+        points: [
+          [36.3390, 43.1195], [36.3395, 43.1185], [36.3400, 43.1175],
+          [36.3405, 43.1165], [36.3410, 43.1155], [36.3415, 43.1145]
+        ],
+        color: '#f59e0b'
+      }
+    ];
+
+    // AI hints data
+    const aiHintsStudent = [
+      { icon: '🔮', title: 'توقع ذكي', text: 'ازدحام متوقع عند باب الرئاسة خلال 15 دقيقة - يُنصح باستخدام باب العلوم' },
+      { icon: '⚡', title: 'أسرع مسار', text: 'الحافلة خط 2 هي الأقرب إليك حالياً - وقت الوصول المتوقع: 3 دقائق' },
+      { icon: '📊', title: 'تحليل الطلب', text: 'الطلب منخفض حالياً في منطقتك - فرصة جيدة للحصول على توصيل سريع' },
+      { icon: '🌡️', title: 'توقع الذروة', text: 'ساعة الذروة القادمة: 12:30 - يُنصح بطلب التوصيل قبلها بـ10 دقائق' },
+      { icon: '🎯', title: 'اقتراح ذكي', text: 'رحلة مشتركة متاحة مع 2 طلاب آخرين لنفس الوجهة - سرعة أعلى' }
+    ];
+
+    const aiHintsDriver = [
+      { icon: '🔥', title: 'منطقة طلب عالي', text: 'باب الرئاسة - ~12 طالب ينتظرون حالياً' },
+      { icon: '📈', title: 'توقع الطلب', text: 'متوقع زيادة 40% في الطلب عند باب العلوم خلال 20 دقيقة' },
+      { icon: '🛣️', title: 'المسار الأمثل', text: 'المسار المقترح: باب الصناعة ← باب الرئاسة ← المكتبة المركزية' },
+      { icon: '⏰', title: 'تنبيه ذروة', text: 'ساعة انتهاء المحاضرات 12:30 - توجه لباب العلوم لأقصى عدد طلاب' },
+      { icon: '💡', title: 'نصيحة ذكية', text: 'منطقة باب طب الأسنان بها أقل تغطية حالياً - فرصة لنقاط إضافية' }
+    ];
     
     // ==================== SDK INITIALIZATION ====================
     
@@ -683,16 +793,63 @@
     }
     
     // ==================== VIEW MANAGEMENT ====================
-    
+
     function showView(viewName) {
+      // Clean up simulations when switching views
+      stopAllSimulations();
+
       document.querySelectorAll('[id$="-view"]').forEach(view => {
         view.classList.add('view-hidden');
       });
-      
+
       const targetView = document.getElementById(`${viewName}-view`);
       if (targetView) {
         targetView.classList.remove('view-hidden');
       }
+    }
+
+    function stopAllSimulations() {
+      simulationIntervals.forEach(interval => clearInterval(interval));
+      simulationIntervals = [];
+    }
+
+    // ==================== SIMULATION UTILITIES ====================
+
+    function getRandomPosition(center, range) {
+      return [
+        center[0] + (Math.random() - 0.5) * range,
+        center[1] + (Math.random() - 0.5) * range
+      ];
+    }
+
+    function createCustomIcon(type, size) {
+      const colors = {
+        student: { bg: '#3b82f6', emoji: '👤' },
+        bus: { bg: '#10b981', emoji: '🚌' },
+        car: { bg: '#f59e0b', emoji: '🚗' },
+        you: { bg: '#ef4444', emoji: '📍' }
+      };
+      const c = colors[type] || colors.student;
+      return L.divIcon({
+        html: '<div style="width:' + size + 'px;height:' + size + 'px;background:' + c.bg + ';border-radius:50%;border:3px solid white;box-shadow:0 4px 15px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;font-size:' + (size * 0.5) + 'px;">' + c.emoji + '</div>',
+        className: '',
+        iconSize: [size, size],
+        iconAnchor: [size / 2, size / 2]
+      });
+    }
+
+    function populateAIHints(containerId, hints) {
+      const container = document.getElementById(containerId);
+      if (!container) return;
+      container.innerHTML = '';
+      // Show 2-3 random hints
+      const shuffled = [...hints].sort(() => Math.random() - 0.5).slice(0, 3);
+      shuffled.forEach(hint => {
+        const div = document.createElement('div');
+        div.className = 'ai-hint rounded-lg p-3';
+        div.innerHTML = '<div class="flex items-start gap-2"><span class="text-lg">' + hint.icon + '</span><div><p class="text-purple-300 text-xs font-bold">' + hint.title + '</p><p class="text-slate-300 text-xs mt-1">' + hint.text + '</p></div></div>';
+        container.appendChild(div);
+      });
     }
     
     function selectUserType(type) {
@@ -844,6 +1001,7 @@
       selectedZone = null;
       selectedCustomLocation = null;
       selectedLoginUserType = null;
+      stopAllSimulations();
       if (customLocationMarker && studentMap) {
         studentMap.removeLayer(customLocationMarker);
         customLocationMarker = null;
@@ -909,14 +1067,19 @@
     function initStudentMap() {
       if (studentMap) {
         studentMap.remove();
+        studentMap = null;
       }
+      stopAllSimulations();
+      simBusMarkers = [];
+      simCarMarkers = [];
+      busRouteLines = [];
 
       const mapContainer = document.getElementById('student-map');
       if (!mapContainer) return;
 
       studentMap = L.map('student-map', {
         zoomControl: false
-      }).setView(MOSUL_CENTER, 16);
+      }).setView(MOSUL_CENTER, 15);
 
       L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
         attribution: '© OpenStreetMap',
@@ -927,24 +1090,53 @@
       zones.forEach(zone => {
         L.marker(zone.coords, {
           icon: L.divIcon({
-            html: `<div style="font-size: 24px;">${zone.emoji}</div>`,
+            html: '<div style="font-size: 24px;">' + zone.emoji + '</div>',
             className: 'zone-marker',
             iconSize: [40, 40]
           })
         }).addTo(studentMap);
       });
 
+      // Draw bus route lines
+      busRoutes.forEach(route => {
+        const line = L.polyline(route.points, {
+          color: route.color,
+          weight: 3,
+          opacity: 0.6,
+          dashArray: '8, 8'
+        }).addTo(studentMap);
+        busRouteLines.push(line);
+      });
+
+      // Add simulated bus markers (on their routes)
+      busRoutes.forEach((route, i) => {
+        const startPos = route.points[0];
+        const marker = L.marker(startPos, {
+          icon: createCustomIcon('bus', 38)
+        }).addTo(studentMap);
+        marker.bindPopup('<div style="direction:rtl;text-align:right;"><b>🚌 حافلة ' + (i + 1) + '</b><br><span style="font-size:11px;">' + route.name + '</span></div>');
+        simBusMarkers.push({ marker, route: route, routeIndex: 0, direction: 1 });
+      });
+
+      // Add simulated car markers
+      for (let i = 0; i < 4; i++) {
+        const pos = getRandomPosition(MOSUL_CENTER, 0.008);
+        const marker = L.marker(pos, {
+          icon: createCustomIcon('car', 32)
+        }).addTo(studentMap);
+        marker.bindPopup('<div style="direction:rtl;text-align:right;"><b>🚗 سيارة ' + (i + 1) + '</b><br><span style="font-size:11px;">سائق متاح</span></div>');
+        simCarMarkers.push({ marker, basePos: pos });
+      }
+
       // Add click handler for custom location selection
       studentMap.on('click', function(e) {
         const lat = e.latlng.lat;
         const lng = e.latlng.lng;
 
-        // Remove previous custom marker if exists
         if (customLocationMarker) {
           studentMap.removeLayer(customLocationMarker);
         }
 
-        // Create new marker at clicked location
         customLocationMarker = L.marker([lat, lng], {
           icon: L.divIcon({
             html: '<div style="width: 40px; height: 40px; background: linear-gradient(135deg, #ef4444, #dc2626); border-radius: 50%; border: 4px solid white; display: flex; align-items: center; justify-content: center; font-size: 20px; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.5); animation: bounce 0.5s;">📍</div>',
@@ -953,28 +1145,64 @@
           })
         }).addTo(studentMap);
 
-        // Save custom location
         selectedCustomLocation = { lat, lng };
         selectedZone = null;
 
-        // Update UI
         document.querySelectorAll('.zone-button').forEach(btn => btn.classList.remove('active'));
         document.getElementById('selected-zone-info').classList.remove('view-hidden');
-        document.getElementById('selected-zone-name').textContent = `موقع مخصص (${lat.toFixed(4)}, ${lng.toFixed(4)})`;
+        document.getElementById('selected-zone-name').textContent = 'موقع مخصص (' + lat.toFixed(4) + ', ' + lng.toFixed(4) + ')';
         document.getElementById('zone-ai-rating').textContent = '📍 تم تحديد الموقع على الخريطة';
         document.getElementById('request-destination').textContent = 'موقع مخصص';
       });
 
-      // Add student marker if there's a selected location
-      if (selectedZone) {
-        L.marker(MOSUL_CENTER, {
-          icon: L.divIcon({
-            html: '<div style="width: 30px; height: 30px; background: #ef4444; border-radius: 50%; border: 3px solid white; display: flex; align-items: center; justify-content: center; font-size: 16px;">📍</div>',
-            className: '',
-            iconSize: [30, 30]
-          })
-        }).addTo(studentMap);
-      }
+      // Start student map simulation
+      startStudentSimulation();
+
+      // Populate AI hints
+      populateAIHints('student-ai-hints', aiHintsStudent);
+    }
+
+    function startStudentSimulation() {
+      // Move buses along their routes
+      const busInterval = setInterval(() => {
+        simBusMarkers.forEach(bus => {
+          bus.routeIndex += bus.direction;
+          if (bus.routeIndex >= bus.route.points.length - 1) bus.direction = -1;
+          if (bus.routeIndex <= 0) bus.direction = 1;
+          const pos = bus.route.points[bus.routeIndex];
+          bus.marker.setLatLng(pos);
+        });
+      }, 3000);
+      simulationIntervals.push(busInterval);
+
+      // Move cars randomly
+      const carInterval = setInterval(() => {
+        simCarMarkers.forEach(car => {
+          const newPos = getRandomPosition(car.basePos, 0.002);
+          car.marker.setLatLng(newPos);
+        });
+      }, 4000);
+      simulationIntervals.push(carInterval);
+
+      // Update live stats
+      const statsInterval = setInterval(() => {
+        const busCount = Math.floor(Math.random() * 2) + 2;
+        const carCount = Math.floor(Math.random() * 3) + 3;
+        const eta = Math.floor(Math.random() * 5) + 2;
+        const busEl = document.getElementById('live-bus-count');
+        const carEl = document.getElementById('live-car-count');
+        const etaEl = document.getElementById('live-eta');
+        if (busEl) busEl.textContent = busCount;
+        if (carEl) carEl.textContent = carCount;
+        if (etaEl) etaEl.textContent = eta + 'د';
+      }, 6000);
+      simulationIntervals.push(statsInterval);
+
+      // Rotate AI hints
+      const hintInterval = setInterval(() => {
+        populateAIHints('student-ai-hints', aiHintsStudent);
+      }, 15000);
+      simulationIntervals.push(hintInterval);
     }
     
     function requestRide() {
@@ -1052,30 +1280,144 @@
     function initDriverMap() {
       if (driverMap) {
         driverMap.remove();
+        driverMap = null;
       }
-      
+      stopAllSimulations();
+      simStudentMarkers = [];
+
       const mapContainer = document.getElementById('driver-map');
       if (!mapContainer) return;
-      
+
       driverMap = L.map('driver-map', {
         zoomControl: false
       }).setView(MOSUL_CENTER, 15);
-      
+
       L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
         attribution: '© OpenStreetMap',
         maxZoom: 19
       }).addTo(driverMap);
-      
+
       // Add zone markers
       zones.forEach(zone => {
         L.marker(zone.coords, {
           icon: L.divIcon({
-            html: `<div style="font-size: 20px;">${zone.emoji}</div>`,
+            html: '<div style="font-size: 20px;">' + zone.emoji + '</div>',
             className: 'zone-marker',
             iconSize: [35, 35]
           })
         }).addTo(driverMap);
       });
+
+      // Add driver's own position marker
+      L.marker(MOSUL_CENTER, {
+        icon: createCustomIcon(currentUser.user_type === 'bus-driver' ? 'bus' : 'car', 44)
+      }).addTo(driverMap);
+
+      // Add "you are here" pulse ring
+      L.circle(MOSUL_CENTER, {
+        radius: 40,
+        color: currentUser.user_type === 'bus-driver' ? '#10b981' : '#f59e0b',
+        fillColor: currentUser.user_type === 'bus-driver' ? '#10b981' : '#f59e0b',
+        fillOpacity: 0.15,
+        weight: 2
+      }).addTo(driverMap);
+
+      // Add simulated student markers
+      const studentNames = ['أحمد', 'سارة', 'محمد', 'فاطمة', 'علي', 'زينب', 'حسن', 'مريم'];
+      const numStudents = Math.floor(Math.random() * 4) + 5; // 5-8 students
+      for (let i = 0; i < numStudents; i++) {
+        const pos = getRandomPosition(MOSUL_CENTER, 0.01);
+        const marker = L.marker(pos, {
+          icon: createCustomIcon('student', 28)
+        }).addTo(driverMap);
+        const name = studentNames[i % studentNames.length];
+        const nearestZone = zones[Math.floor(Math.random() * zones.length)];
+        marker.bindPopup('<div style="direction:rtl;text-align:right;"><b>👤 ' + name + '</b><br><span style="font-size:11px;">يريد التوصيل إلى: ' + nearestZone.name + '</span></div>');
+        simStudentMarkers.push({ marker, basePos: pos, name: name, destination: nearestZone.name });
+      }
+
+      // Start driver simulation
+      startDriverSimulation();
+    }
+
+    function startDriverSimulation() {
+      // Move student markers slightly
+      const studentMoveInterval = setInterval(() => {
+        simStudentMarkers.forEach(student => {
+          const newPos = getRandomPosition(student.basePos, 0.001);
+          student.marker.setLatLng(newPos);
+        });
+      }, 5000);
+      simulationIntervals.push(studentMoveInterval);
+
+      // Update driver stats
+      const statsInterval = setInterval(() => {
+        const nearbyCount = Math.floor(Math.random() * 4) + 4;
+        const requestCount = Math.floor(Math.random() * 3) + 2;
+        const routes = ['خط 1', 'خط 2', 'خط 3'];
+        const el1 = document.getElementById('driver-nearby-students');
+        const el2 = document.getElementById('driver-active-requests');
+        const el3 = document.getElementById('driver-suggested-route');
+        if (el1) el1.textContent = nearbyCount;
+        if (el2) el2.textContent = requestCount;
+        if (el3) el3.textContent = routes[Math.floor(Math.random() * routes.length)];
+      }, 5000);
+      simulationIntervals.push(statsInterval);
+
+      // Update driver alert text
+      const alertMessages = [
+        '~8 طلاب متوقعين في منطقتك خلال 10 دقائق',
+        'ازدحام مرتفع عند باب الرئاسة - توجه لكسب نقاط إضافية',
+        'انتهاء محاضرة في كلية العلوم خلال 5 دقائق - توقع ارتفاع الطلب',
+        '3 طلاب ينتظرون عند باب الصناعة الآن'
+      ];
+      let alertIndex = 0;
+      const alertInterval = setInterval(() => {
+        alertIndex = (alertIndex + 1) % alertMessages.length;
+        const el = document.getElementById('driver-alert-text');
+        if (el) el.textContent = alertMessages[alertIndex];
+      }, 8000);
+      simulationIntervals.push(alertInterval);
+
+      // Initial stats
+      const el1 = document.getElementById('driver-nearby-students');
+      const el2 = document.getElementById('driver-active-requests');
+      const el3 = document.getElementById('driver-suggested-route');
+      if (el1) el1.textContent = simStudentMarkers.length;
+      if (el2) el2.textContent = Math.floor(Math.random() * 3) + 2;
+      if (el3) el3.textContent = 'خط 1';
+
+      // Populate driver AI hints and requests
+      populateAIHints('driver-ai-hints', aiHintsDriver);
+      populateDriverRequests();
+    }
+
+    function populateDriverRequests() {
+      const list = document.getElementById('driver-requests-list');
+      if (!list) return;
+      list.innerHTML = '';
+
+      const studentNames = ['أحمد محمد', 'سارة علي', 'محمد خالد', 'فاطمة حسن', 'علي عمر'];
+      const numRequests = Math.floor(Math.random() * 3) + 3;
+
+      for (let i = 0; i < numRequests; i++) {
+        const name = studentNames[i % studentNames.length];
+        const zone = zones[Math.floor(Math.random() * zones.length)];
+        const minutes = Math.floor(Math.random() * 10) + 1;
+        const card = document.createElement('div');
+        card.className = 'gradient-card rounded-lg p-3 border border-slate-700/50';
+        card.innerHTML =
+          '<div class="flex items-center justify-between mb-2">' +
+            '<div><p class="text-white font-bold text-sm">👤 ' + name + '</p>' +
+            '<p class="text-slate-400 text-xs">الوجهة: ' + zone.emoji + ' ' + zone.name + '</p></div>' +
+            '<p class="text-slate-500 text-xs">منذ ' + minutes + ' د</p>' +
+          '</div>' +
+          '<div class="flex gap-2">' +
+            '<button onclick="this.parentElement.parentElement.remove()" class="flex-1 py-2 rounded-lg btn-primary text-white text-xs font-bold">قبول</button>' +
+            '<button onclick="this.parentElement.parentElement.remove()" class="flex-1 py-2 rounded-lg bg-slate-700 text-slate-300 text-xs font-bold">رفض</button>' +
+          '</div>';
+        list.appendChild(card);
+      }
     }
     
     // ==================== ADMIN DASHBOARD ====================
