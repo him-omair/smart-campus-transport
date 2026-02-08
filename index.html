@@ -82,7 +82,12 @@
       0%, 100% { transform: translateY(0px); }
       50% { transform: translateY(-10px); }
     }
-    
+
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+
     .floating {
       animation: float 3s ease-in-out infinite;
     }
@@ -201,22 +206,50 @@
       </h1>
       <p class="text-slate-400 text-lg mb-8">جامعة الموصل</p>
       
+      <!-- User Type Selection -->
+      <div id="login-user-type-selection" class="w-full max-w-md space-y-3 mb-6">
+        <p class="text-slate-400 text-sm mb-3">اختر نوع المستخدم</p>
+        <button onclick="selectLoginUserType('student')" class="w-full py-3 rounded-xl btn-primary text-white font-bold flex items-center justify-center gap-3">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+          </svg>
+          طالب
+        </button>
+        <button onclick="selectLoginUserType('car-driver')" class="w-full py-3 rounded-xl btn-secondary text-white font-bold flex items-center justify-center gap-3">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+          </svg>
+          سائق سيارة
+        </button>
+        <button onclick="selectLoginUserType('bus-driver')" class="w-full py-3 rounded-xl btn-amber text-white font-bold flex items-center justify-center gap-3">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h8m-8 4h8m-6 4h4M5 3h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2z"></path>
+          </svg>
+          سائق حافلة
+        </button>
+        <button onclick="selectLoginUserType('admin')" class="w-full py-3 rounded-xl bg-slate-700 text-white font-bold flex items-center justify-center gap-3">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+          </svg>
+          إدارة
+        </button>
+      </div>
+
       <!-- Login Form -->
-      <div class="w-full max-w-md space-y-4">
+      <div id="login-form" class="w-full max-w-md space-y-4 view-hidden">
         <div>
           <label class="block text-slate-400 text-sm mb-2">البريد الإلكتروني</label>
-          <input id="login-email" type="email" class="input-field" placeholder="أدخل بريدك الإلكتروني">
+          <input id="login-email" type="email" class="input-field" placeholder="أدخل أي بريد للاختبار">
         </div>
-        
-        <div>
-          <label class="block text-slate-400 text-sm mb-2">كلمة المرور</label>
-          <input id="login-password" type="password" class="input-field" placeholder="أدخل كلمة المرور">
-        </div>
-        
+
         <button onclick="handleLogin()" class="w-full py-3 rounded-xl btn-primary text-white font-bold text-lg">
           دخول
         </button>
-        
+
+        <button onclick="resetLoginView()" class="w-full py-2 rounded-xl bg-slate-800/50 border border-slate-700/50 text-slate-400 font-medium text-sm">
+          رجوع
+        </button>
+
         <div class="relative my-4">
           <div class="absolute inset-0 flex items-center">
             <div class="w-full border-t border-slate-700"></div>
@@ -225,7 +258,7 @@
             <span class="px-2 bg-slate-900 text-slate-400">أم أنت جديد؟</span>
           </div>
         </div>
-        
+
         <button onclick="showView('register')" class="w-full py-3 rounded-xl bg-slate-800/50 border border-slate-700/50 text-slate-400 font-medium">
           إنشاء حساب جديد
         </button>
@@ -410,8 +443,8 @@
     <div class="flex-1 overflow-auto p-4">
       <!-- Zones Tab -->
       <div id="student-zones-tab">
-        <p class="text-slate-400 text-sm mb-4">اختر منطقة أو حدد وجهتك على الخريطة</p>
-        
+        <p class="text-slate-400 text-sm mb-4">اختر منطقة أو حدد وجهتك على الخريطة بالضغط عليها</p>
+
         <div class="space-y-2 mb-6">
           <button onclick="selectZone('باب الصناعة', 1)" class="zone-button w-full">🏭 باب الصناعة</button>
           <button onclick="selectZone('باب الرئاسة', 2)" class="zone-button w-full">🏢 باب الرئاسة</button>
@@ -439,6 +472,10 @@
       
       <!-- Request Tab -->
       <div id="student-request-tab" class="view-hidden">
+        <div class="mb-4 p-3 rounded-lg bg-blue-500/10 border border-blue-500/30">
+          <p class="text-blue-300 text-xs">💡 اضغط على الخريطة لتحديد وجهتك</p>
+        </div>
+
         <div id="student-map" class="h-96 rounded-lg mb-4 border border-slate-700/50"></div>
         
         <div class="gradient-card rounded-lg p-4 border border-slate-700/50 mb-4">
@@ -606,7 +643,8 @@
     // Current user state
     let currentUser = null;
     let allUsers = [];
-    
+    let selectedLoginUserType = null;
+
     // Zone data
     const zones = [
       { name: 'باب الصناعة', id: 1, coords: [36.3420, 43.1180], emoji: '🏭' },
@@ -622,6 +660,8 @@
     
     // Selected zone
     let selectedZone = null;
+    let selectedCustomLocation = null;
+    let customLocationMarker = null;
     let studentMap = null;
     let driverMap = null;
     
@@ -683,32 +723,61 @@
     }
     
     // ==================== AUTHENTICATION ====================
-    
+
+    function selectLoginUserType(type) {
+      selectedLoginUserType = type;
+      document.getElementById('login-user-type-selection').classList.add('view-hidden');
+      document.getElementById('login-form').classList.remove('view-hidden');
+    }
+
+    function resetLoginView() {
+      selectedLoginUserType = null;
+      document.getElementById('login-user-type-selection').classList.remove('view-hidden');
+      document.getElementById('login-form').classList.add('view-hidden');
+      document.getElementById('login-email').value = '';
+    }
+
     function handleLogin() {
       const email = document.getElementById('login-email').value.trim();
-      const password = document.getElementById('login-password').value.trim();
-      
-      if (!email || !password) {
-        alert('الرجاء ملء جميع الحقول');
+
+      if (!email) {
+        alert('الرجاء إدخال بريد إلكتروني');
         return;
       }
-      
-      // Simulate finding user
-      const user = allUsers.find(u => u.email === email);
-      if (user) {
-        currentUser = user;
-        if (user.user_type === 'student') {
-          showView('student-dashboard');
-          initStudentDashboard();
-        } else if (user.user_type === 'car-driver' || user.user_type === 'bus-driver') {
-          showView('driver-dashboard');
-          initDriverDashboard();
-        } else if (user.user_type === 'admin') {
-          showView('admin-dashboard');
-          initAdminDashboard();
-        }
-      } else {
-        alert('بيانات تسجيل الدخول غير صحيحة');
+
+      if (!selectedLoginUserType) {
+        alert('الرجاء اختيار نوع المستخدم');
+        return;
+      }
+
+      // Create a dummy user for testing
+      currentUser = {
+        user_id: Date.now().toString(),
+        user_type: selectedLoginUserType,
+        name: 'مستخدم تجريبي',
+        email: email,
+        phone: '07701234567',
+        points: Math.floor(Math.random() * 100),
+        rides: Math.floor(Math.random() * 20)
+      };
+
+      // Add dummy data based on user type
+      if (selectedLoginUserType === 'car-driver' || selectedLoginUserType === 'bus-driver') {
+        currentUser.car_model = 'Toyota 2020';
+        currentUser.car_plate = '1234 ABC';
+        currentUser.driver_license = 'DL-' + Date.now();
+      }
+
+      // Navigate to appropriate dashboard
+      if (selectedLoginUserType === 'student') {
+        showView('student-dashboard');
+        initStudentDashboard();
+      } else if (selectedLoginUserType === 'car-driver' || selectedLoginUserType === 'bus-driver') {
+        showView('driver-dashboard');
+        initDriverDashboard();
+      } else if (selectedLoginUserType === 'admin') {
+        showView('admin-dashboard');
+        initAdminDashboard();
       }
     }
     
@@ -773,9 +842,14 @@
     function handleLogout() {
       currentUser = null;
       selectedZone = null;
+      selectedCustomLocation = null;
+      selectedLoginUserType = null;
+      if (customLocationMarker && studentMap) {
+        studentMap.removeLayer(customLocationMarker);
+        customLocationMarker = null;
+      }
       showView('login');
-      document.getElementById('login-email').value = '';
-      document.getElementById('login-password').value = '';
+      resetLoginView();
     }
     
     // ==================== STUDENT DASHBOARD ====================
@@ -815,33 +889,40 @@
     
     function selectZone(zoneName, zoneId) {
       selectedZone = zones.find(z => z.id === zoneId);
-      
+      selectedCustomLocation = null;
+
       document.querySelectorAll('.zone-button').forEach(btn => btn.classList.remove('active'));
       event.target.closest('.zone-button').classList.add('active');
-      
+
       document.getElementById('selected-zone-info').classList.remove('view-hidden');
       document.getElementById('selected-zone-name').textContent = zoneName;
       document.getElementById('zone-ai-rating').textContent = '⭐ جودة عالية - توفر نقل - مسافة: ' + Math.floor(Math.random() * 5 + 1) + ' كم';
       document.getElementById('request-destination').textContent = zoneName;
+
+      // Remove custom marker if exists
+      if (customLocationMarker && studentMap) {
+        studentMap.removeLayer(customLocationMarker);
+        customLocationMarker = null;
+      }
     }
     
     function initStudentMap() {
       if (studentMap) {
         studentMap.remove();
       }
-      
+
       const mapContainer = document.getElementById('student-map');
       if (!mapContainer) return;
-      
+
       studentMap = L.map('student-map', {
         zoomControl: false
       }).setView(MOSUL_CENTER, 16);
-      
+
       L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
         attribution: '© OpenStreetMap',
         maxZoom: 19
       }).addTo(studentMap);
-      
+
       // Add zone markers
       zones.forEach(zone => {
         L.marker(zone.coords, {
@@ -852,8 +933,39 @@
           })
         }).addTo(studentMap);
       });
-      
-      // Add student marker
+
+      // Add click handler for custom location selection
+      studentMap.on('click', function(e) {
+        const lat = e.latlng.lat;
+        const lng = e.latlng.lng;
+
+        // Remove previous custom marker if exists
+        if (customLocationMarker) {
+          studentMap.removeLayer(customLocationMarker);
+        }
+
+        // Create new marker at clicked location
+        customLocationMarker = L.marker([lat, lng], {
+          icon: L.divIcon({
+            html: '<div style="width: 40px; height: 40px; background: linear-gradient(135deg, #ef4444, #dc2626); border-radius: 50%; border: 4px solid white; display: flex; align-items: center; justify-content: center; font-size: 20px; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.5); animation: bounce 0.5s;">📍</div>',
+            className: '',
+            iconSize: [40, 40]
+          })
+        }).addTo(studentMap);
+
+        // Save custom location
+        selectedCustomLocation = { lat, lng };
+        selectedZone = null;
+
+        // Update UI
+        document.querySelectorAll('.zone-button').forEach(btn => btn.classList.remove('active'));
+        document.getElementById('selected-zone-info').classList.remove('view-hidden');
+        document.getElementById('selected-zone-name').textContent = `موقع مخصص (${lat.toFixed(4)}, ${lng.toFixed(4)})`;
+        document.getElementById('zone-ai-rating').textContent = '📍 تم تحديد الموقع على الخريطة';
+        document.getElementById('request-destination').textContent = 'موقع مخصص';
+      });
+
+      // Add student marker if there's a selected location
       if (selectedZone) {
         L.marker(MOSUL_CENTER, {
           icon: L.divIcon({
@@ -866,15 +978,15 @@
     }
     
     function requestRide() {
-      if (!selectedZone) {
-        alert('الرجاء اختيار وجهة أولاً');
+      if (!selectedZone && !selectedCustomLocation) {
+        alert('الرجاء اختيار وجهة أولاً - اضغط على الخريطة أو اختر منطقة');
         return;
       }
-      
+
       const btn = document.getElementById('request-button');
       btn.textContent = 'جاري البحث...';
       btn.disabled = true;
-      
+
       setTimeout(() => {
         btn.textContent = 'تم تأكيد الرحلة ✓';
         btn.classList.add('bg-emerald-600');
@@ -1032,7 +1144,7 @@
       list.innerHTML = '';
       
       const drivers = allUsers.filter(u => u.user_type === 'car-driver' || u.user_type === 'bus-driver').sort((a, b) => (b.points || 0) - (a.points || 0));
-      const rewards = ['كتاب شكر', 'شهادة عمل تطوعي'];
+      const rewards = ['كتاب شكر', 'شهادة عمل تطوعي', 'مكافأة مالية'];
       
       drivers.forEach((driver) => {
         const card = document.createElement('div');
