@@ -1,14 +1,15 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ar" class="h-full" dir="rtl">
- <head>
+<head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>نظام النقل الذكي</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Almarai:wght@400;700;800&amp;display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Almarai:wght@400;700;800&display=swap" rel="stylesheet">
   <script src="/_sdk/element_sdk.js"></script>
+  <script src="/_sdk/data_sdk.js"></script>
   <style>
     * {
       direction: rtl;
@@ -17,6 +18,10 @@
     body {
       box-sizing: border-box;
       font-family: 'Almarai', sans-serif;
+    }
+    
+    html, body {
+      height: 100%;
     }
     
     ::-webkit-scrollbar {
@@ -34,19 +39,6 @@
       background: #1a1a2e;
     }
     
-    @keyframes pulse-ring {
-      0% { transform: scale(0.8); opacity: 1; }
-      100% { transform: scale(2); opacity: 0; }
-    }
-    
-    .pulse-marker {
-      animation: pulse-ring 2s ease-out infinite;
-    }
-    
-    .glow-blue {
-      box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
-    }
-    
     .gradient-dark {
       background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 50%, #16213e 100%);
     }
@@ -61,7 +53,7 @@
       transition: all 0.3s ease;
     }
     
-    .btn-primary:hover {
+    .btn-primary:hover:not(:disabled) {
       transform: translateY(-2px);
       box-shadow: 0 10px 30px rgba(16, 185, 129, 0.4);
     }
@@ -71,7 +63,7 @@
       transition: all 0.3s ease;
     }
     
-    .btn-secondary:hover {
+    .btn-secondary:hover:not(:disabled) {
       transform: translateY(-2px);
       box-shadow: 0 10px 30px rgba(59, 130, 246, 0.4);
     }
@@ -81,7 +73,7 @@
       transition: all 0.3s ease;
     }
     
-    .btn-amber:hover {
+    .btn-amber:hover:not(:disabled) {
       transform: translateY(-2px);
       box-shadow: 0 10px 30px rgba(245, 158, 11, 0.4);
     }
@@ -102,27 +94,6 @@
     
     .status-live {
       animation: blink 1.5s ease-in-out infinite;
-    }
-    
-    .custom-marker {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 50%;
-      border: 3px solid white;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-    }
-    
-    .student-marker {
-      background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-    }
-    
-    .bus-marker {
-      background: linear-gradient(135deg, #10b981, #059669);
-    }
-    
-    .car-marker {
-      background: linear-gradient(135deg, #f59e0b, #d97706);
     }
     
     .view-hidden {
@@ -147,241 +118,481 @@
       animation: fadeIn 0.5s ease-out forwards;
     }
     
-    /* Bottom panel styling */
     .bottom-panel {
       height: 40%;
       overflow-y: auto;
     }
     
-    /* RTL adjustments for leaflet */
-    .leaflet-control {
-      margin-right: 0;
-      margin-left: 10px;
+    .zone-button {
+      padding: 12px;
+      border-radius: 8px;
+      border: 2px solid #334155;
+      background: rgba(30, 41, 59, 0.5);
+      color: white;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-align: right;
+    }
+    
+    .zone-button:hover {
+      border-color: #10b981;
+      background: rgba(16, 185, 129, 0.1);
+    }
+    
+    .zone-button.active {
+      border-color: #10b981;
+      background: rgba(16, 185, 129, 0.3);
+      color: #10b981;
+    }
+    
+    .input-field {
+      background: rgba(30, 41, 59, 0.6);
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 12px;
+      color: white;
+      font-family: 'Almarai', sans-serif;
+      width: 100%;
+    }
+    
+    .input-field:focus {
+      outline: none;
+      border-color: #10b981;
+      box-shadow: 0 0 10px rgba(16, 185, 129, 0.2);
+    }
+    
+    .input-field::placeholder {
+      color: #64748b;
+    }
+    
+    .zone-marker {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, #10b981, #059669);
+      border-radius: 50%;
+      border: 3px solid white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+      cursor: pointer;
     }
   </style>
-  <style>@view-transition { navigation: auto; }</style>
-  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
- </head>
- <body class="h-full gradient-dark text-white overflow-auto"><!-- ==================== الصفحة الرئيسية ==================== -->
-  <div id="landing-view" class="h-full flex flex-col">
-   <div class="absolute inset-0 opacity-10" style="background-image: url('data:image/svg+xml,%3Csvg width=&quot;60&quot; height=&quot;60&quot; viewBox=&quot;0 0 60 60&quot; xmlns=&quot;http://www.w3.org/2000/svg&quot;%3E%3Cg fill=&quot;none&quot; fill-rule=&quot;evenodd&quot;%3E%3Cg fill=&quot;%2310b981&quot; fill-opacity=&quot;0.4&quot;%3E%3Cpath d=&quot;M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z&quot;/%3E%3C/g%3E%3C/g%3E%3C/svg%3E');"></div>
-   <div class="relative flex-1 flex flex-col items-center justify-center p-6 text-center">
-    <div class="mb-8 floating">
-     <div class="w-24 h-24 mx-auto rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center glow-blue">
-      <svg class="w-14 h-14 text-white" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path>
-      </svg>
-     </div>
+</head>
+<body class="h-full gradient-dark text-white overflow-auto">
+  
+  <!-- ==================== LOGIN VIEW ==================== -->
+  <div id="login-view" class="h-full flex flex-col">
+    <div class="relative flex-1 flex flex-col items-center justify-center p-6">
+      <!-- Logo -->
+      <div class="mb-8 floating">
+        <div class="w-24 h-24 mx-auto rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center" style="box-shadow: 0 0 20px rgba(16, 185, 129, 0.5);">
+          <svg class="w-14 h-14 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path>
+          </svg>
+        </div>
+      </div>
+      
+      <!-- Title -->
+      <h1 class="text-4xl font-bold mb-2 bg-gradient-to-r from-emerald-400 to-teal-300 bg-clip-text text-transparent">
+        نظام النقل الذكي
+      </h1>
+      <p class="text-slate-400 text-lg mb-8">جامعة الموصل</p>
+      
+      <!-- Login Form -->
+      <div class="w-full max-w-md space-y-4">
+        <div>
+          <label class="block text-slate-400 text-sm mb-2">البريد الإلكتروني</label>
+          <input id="login-email" type="email" class="input-field" placeholder="أدخل بريدك الإلكتروني">
+        </div>
+        
+        <div>
+          <label class="block text-slate-400 text-sm mb-2">كلمة المرور</label>
+          <input id="login-password" type="password" class="input-field" placeholder="أدخل كلمة المرور">
+        </div>
+        
+        <button onclick="handleLogin()" class="w-full py-3 rounded-xl btn-primary text-white font-bold text-lg">
+          دخول
+        </button>
+        
+        <div class="relative my-4">
+          <div class="absolute inset-0 flex items-center">
+            <div class="w-full border-t border-slate-700"></div>
+          </div>
+          <div class="relative flex justify-center text-sm">
+            <span class="px-2 bg-slate-900 text-slate-400">أم أنت جديد؟</span>
+          </div>
+        </div>
+        
+        <button onclick="showView('register')" class="w-full py-3 rounded-xl bg-slate-800/50 border border-slate-700/50 text-slate-400 font-medium">
+          إنشاء حساب جديد
+        </button>
+      </div>
+      
+      <!-- University Logo -->
+      <div class="mt-12 text-center">
+        <div class="w-16 h-16 mx-auto mb-3 bg-slate-800/50 rounded-full flex items-center justify-center">
+          <span class="text-3xl">🎓</span>
+        </div>
+        <p class="text-slate-500 text-xs">جامعة الموصل</p>
+      </div>
     </div>
-    <h1 id="main-title" class="text-3xl md:text-4xl font-bold mb-3 bg-gradient-to-r from-emerald-400 to-teal-300 bg-clip-text text-transparent">نظام النقل الذكي</h1>
-    <p id="main-subtitle" class="text-slate-400 text-lg mb-2 max-w-sm">جامعة الموصل</p>
-    <p class="text-slate-500 text-sm mb-8 max-w-xs">نظام نقل ذكي يعتمد على الذكاء الاصطناعي لتنقل الطلاب والموظفين</p>
-    <div class="mb-10 px-4 py-2 rounded-full bg-slate-800/50 border border-slate-700/50 text-sm text-slate-400"><span class="text-emerald-400">●</span> وضع العرض المباشر
-    </div>
-    <div class="w-full max-w-sm space-y-4"><button onclick="showView('student')" class="w-full py-4 px-6 rounded-2xl btn-primary text-white font-semibold text-lg flex items-center justify-center gap-3">
-      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-      </svg> الطالب </button> <button onclick="showView('bus-driver')" class="w-full py-4 px-6 rounded-2xl btn-secondary text-white font-semibold text-lg flex items-center justify-center gap-3">
-      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h8m-8 4h8m-6 4h4M5 3h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2z"></path>
-      </svg> سائق الحافلة </button> <button onclick="showView('regular-driver')" class="w-full py-4 px-6 rounded-2xl btn-amber text-white font-semibold text-lg flex items-center justify-center gap-3">
-      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
-      </svg> السائق الموظف </button> <button onclick="showView('admin')" class="w-full py-3 px-6 rounded-xl bg-slate-800/50 border border-slate-700/50 text-slate-400 font-medium flex items-center justify-center gap-2 hover:bg-slate-700/50 transition-all">
-      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path> <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-      </svg> لوحة التحكم </button> <button onclick="showView('leaderboard')" class="w-full py-3 px-6 rounded-xl bg-purple-600/30 border border-purple-500/50 text-purple-400 font-medium flex items-center justify-center gap-2 hover:bg-purple-600/40 transition-all">
-      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-      </svg> لوحة المتصدرين </button>
-    </div>
-    <div class="mt-8 text-xs text-slate-600">
-     عرض توضيحي • مسابقة IEEE 2024
-    </div>
-   </div>
-  </div><!-- ==================== لوحة الطالب ==================== -->
-  <div id="student-view" class="h-full flex flex-col view-hidden">
-   <div class="flex-1 flex flex-col"><!-- Map -->
-    <div id="student-map" class="flex-1 relative z-0"></div><!-- Header -->
-    <div class="absolute top-0 left-0 right-0 z-10 p-4">
-     <div class="flex items-center justify-between"><button onclick="showView('landing')" class="w-10 h-10 rounded-full bg-slate-800/80 backdrop-blur flex items-center justify-center">
-       <svg class="w-5 h-5" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
-       </svg></button>
-      <div class="px-4 py-2 rounded-full bg-slate-800/80 backdrop-blur text-sm flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-emerald-400 status-live"></span> <span class="text-emerald-400 font-medium">مباشر</span>
-      </div>
-      <div class="w-10 h-10 rounded-full bg-slate-800/80 backdrop-blur flex items-center justify-center">
-       <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
-       </svg>
-      </div>
-     </div>
-    </div><!-- Bottom Panel -->
-    <div class="bottom-panel gradient-card border-t border-slate-700/50 flex flex-col gap-4 p-4"><!-- Status Card -->
-     <div id="student-status-card" class="rounded-xl p-3 bg-slate-800/50 border border-slate-700/50">
-      <p id="student-status-text" class="text-white font-medium text-sm">جاري البحث عن وسائل نقل قريبة...</p>
-      <p id="student-status-sub" class="text-slate-400 text-xs mt-1">جاري تحليل أنماط الطلب</p>
-     </div><!-- Nearby Transport Info -->
-     <div class="grid grid-cols-3 gap-2">
-      <div class="rounded-lg p-2 bg-slate-800/50 border border-slate-700/50 text-center">
-       <p class="text-xs text-slate-400">الحافلات</p>
-       <p id="nearby-buses" class="text-lg font-bold text-white">2</p>
-      </div>
-      <div class="rounded-lg p-2 bg-slate-800/50 border border-slate-700/50 text-center">
-       <p class="text-xs text-slate-400">السيارات</p>
-       <p id="nearby-cars" class="text-lg font-bold text-white">3</p>
-      </div>
-      <div class="rounded-lg p-2 bg-slate-800/50 border border-slate-700/50 text-center">
-       <p class="text-xs text-slate-400">المدة المتوقعة</p>
-       <p id="eta-time" class="text-lg font-bold text-white">3د</p>
-      </div>
-     </div><!-- Request Button --> <button id="request-pickup-btn" onclick="requestPickup()" class="w-full py-3 rounded-xl btn-primary text-white font-bold text-sm flex items-center justify-center gap-2">
-      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
-      </svg> طلب توصيل </button>
-    </div>
-   </div>
-  </div><!-- ==================== لوحة سائق الحافلة ==================== -->
-  <div id="bus-driver-view" class="h-full flex flex-col view-hidden">
-   <div class="flex-1 flex flex-col"><!-- Map -->
-    <div id="bus-map" class="flex-1 relative z-0"></div><!-- Header -->
-    <div class="absolute top-0 right-0 left-0 z-10 p-4">
-     <div class="flex items-center justify-between mb-2"><button onclick="showView('landing')" class="w-10 h-10 rounded-full bg-slate-800/80 backdrop-blur flex items-center justify-center">
-       <svg class="w-5 h-5" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
-       </svg></button>
-      <div class="px-3 py-2 rounded-full bg-blue-500/20 border border-blue-500/50 text-xs flex items-center gap-2"><span class="text-xl">🚌</span> <span class="text-blue-400 font-medium">وضع سائق الحافلة</span>
-      </div>
-      <div class="w-10 h-10 rounded-full bg-slate-800/80 backdrop-blur flex items-center justify-center"><span class="w-2 h-2 rounded-full bg-emerald-400 status-live"></span>
-      </div>
-     </div><!-- Alert Banner -->
-     <div id="bus-alert" class="bg-gradient-to-r from-red-500/20 to-orange-500/20 border border-red-500/50 rounded-lg p-2 backdrop-blur">
-      <p class="text-white font-medium text-xs">⚠️ تنبيه ذكي: طلب عالي!</p>
-      <p class="text-slate-300 text-xs">~15 طالب متوقع في منطقتك خلال 10 دقائق</p>
-     </div>
-    </div><!-- Bottom Panel -->
-    <div class="bottom-panel gradient-card border-t border-slate-700/50 flex flex-col gap-3 p-4"><!-- Stats Card -->
-     <div class="rounded-lg p-3 bg-slate-800/50 border border-slate-700/50">
-      <div class="grid grid-cols-3 gap-2 mb-2">
-       <div class="text-center">
-        <p id="bus-students" class="text-xl font-bold text-white">12</p>
-        <p class="text-slate-500 text-xs">الطلاب</p>
-       </div>
-       <div class="text-center">
-        <p id="bus-stops" class="text-xl font-bold text-blue-400">4</p>
-        <p class="text-slate-500 text-xs">المحطات</p>
-       </div>
-       <div class="text-center">
-        <p id="bus-eta" class="text-xl font-bold text-emerald-400">18د</p>
-        <p class="text-slate-500 text-xs">المدة المتوقعة</p>
-       </div>
-      </div>
-      <div class="bg-slate-700/50 rounded-lg p-2 text-xs">
-       <p class="text-slate-400 mb-1">📍 المسار المقترح</p>
-       <p class="text-white font-medium">الهندسة → العلوم → المكتبة → البوابة الرئيسية</p>
-      </div>
-     </div>
-    </div>
-   </div>
-  </div><!-- ==================== لوحة السائق الموظف ==================== -->
-  <div id="regular-driver-view" class="h-full flex flex-col view-hidden">
-   <div class="flex-1 flex flex-col p-4 overflow-auto"><!-- Header -->
-    <div class="flex items-center justify-between mb-4"><button onclick="showView('landing')" class="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center">
-      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
-      </svg></button>
-     <h1 class="text-base font-semibold">السائق الموظف</h1>
-     <div class="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center"><span class="text-lg">🚗</span>
-     </div>
-    </div><!-- Driver Info Card -->
-    <div id="driver-info-card" class="gradient-card rounded-xl p-4 border border-slate-700/50 mb-4">
-     <div class="flex items-center justify-between mb-3">
-      <div>
-       <p class="text-slate-400 text-xs">معلومات السائق</p>
-       <p id="driver-name" class="text-lg font-bold text-white">أحمد علي</p>
-      </div>
-      <div class="w-12 h-12 rounded-full bg-amber-500/20 flex items-center justify-center"><span class="text-2xl">👤</span>
-      </div>
-     </div>
-     <div class="flex justify-between text-center">
-      <div>
-       <p id="driver-points" class="text-xl font-bold text-amber-400">120</p>
-       <p class="text-slate-500 text-xs">النقاط</p>
-      </div>
-      <div>
-       <p id="driver-rides" class="text-xl font-bold text-blue-400">8</p>
-       <p class="text-slate-500 text-xs">الرحلات</p>
-      </div>
-      <div>
-       <p id="driver-daily-limit" class="text-xl font-bold text-emerald-400">1</p>
-       <p class="text-slate-500 text-xs">المتبقي اليوم</p>
-      </div>
-     </div>
-    </div><!-- Nearby Students Card -->
-    <div id="driver-students-card" class="gradient-card rounded-xl p-4 border border-slate-700/50 mb-4">
-     <p class="text-slate-400 text-xs mb-2">الطلاب القريبون</p>
-     <div class="flex justify-between items-end">
-      <div>
-       <p id="driver-student-count" class="text-3xl font-bold text-white">2</p>
-      </div>
-      <div class="text-right">
-       <p class="text-slate-400 text-xs">المسافة المتوقعة</p>
-       <p id="driver-distance" class="text-lg font-bold text-amber-400">≈ 300 م</p>
-      </div>
-     </div>
-    </div><!-- Accept Button --> <button id="accept-pickup-btn" onclick="acceptPickup()" class="w-full py-3 rounded-xl btn-amber text-white font-bold text-sm flex items-center justify-center gap-2 mb-4">
-     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-     </svg> قبول توصيل (1 في اليوم) </button> <!-- Bonus Card -->
-    <div id="bonus-card" class="view-hidden gradient-card rounded-xl p-4 border border-emerald-500/50 bg-emerald-500/10">
-     <div class="flex items-center gap-3"><span class="text-3xl">🎉</span>
-      <div>
-       <p class="text-emerald-400 font-bold">تم كسب مكافأة!</p>
-       <p class="text-slate-400 text-xs">+50 نقطة تمت إضافتها</p>
-      </div>
-     </div>
-    </div>
-   </div>
-  </div><!-- ==================== لوحة التحكم ==================== -->
-  <div id="admin-view" class="h-full flex flex-col view-hidden">
-   <div class="flex-1 flex flex-col p-4 overflow-auto"><!-- Header -->
-    <div class="flex items-center justify-between mb-4"><button onclick="showView('landing')" class="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center">
-      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
-      </svg></button>
-     <h1 class="text-base font-semibold">لوحة التحكم</h1>
-     <div class="w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center">
-      <svg class="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
-      </svg>
-     </div>
-    </div><!-- Tabs -->
-    <div class="flex gap-2 mb-4"><button onclick="switchAdminTab('rewards')" id="tab-rewards" class="flex-1 py-2 rounded-lg bg-slate-800/50 border border-slate-700/50 text-sm font-medium text-slate-400">المكافآت</button> <button onclick="switchAdminTab('drivers')" id="tab-drivers" class="flex-1 py-2 rounded-lg bg-slate-800/50 border border-slate-700/50 text-sm font-medium text-slate-400">السائقون</button> <button onclick="switchAdminTab('schedule')" id="tab-schedule" class="flex-1 py-2 rounded-lg bg-slate-800/50 border border-slate-700/50 text-sm font-medium text-slate-400">الجدول</button>
-    </div><!-- Rewards Tab -->
-    <div id="rewards-tab" class="view-hidden">
-     <h2 class="text-white font-semibold mb-3 flex items-center gap-2"><span>🏆</span> إدارة المكافآت</h2>
-     <div id="drivers-list" class="space-y-3 mb-4"><!-- Drivers will be populated here -->
-     </div>
-    </div><!-- Drivers Tab -->
-    <div id="drivers-tab" class="view-hidden">
-     <h2 class="text-white font-semibold mb-3 flex items-center gap-2"><span>👥</span> قائمة السائقين</h2>
-     <div id="all-drivers-list" class="space-y-3"><!-- Drivers will be populated here -->
-     </div>
-    </div><!-- Schedule Tab -->
-    <div id="schedule-tab" class="view-hidden">
-     <h2 class="text-white font-semibold mb-3 flex items-center gap-2"><span>📅</span> إعدادات الجدول</h2>
-     <form id="admin-form" onsubmit="saveSchedule(event)" class="space-y-3">
-      <div><label class="block text-slate-400 text-xs mb-1">اليوم</label> <select id="schedule-day" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-emerald-500"> <option value="sunday">الأحد</option> <option value="monday">الاثنين</option> <option value="tuesday">الثلاثاء</option> <option value="wednesday">الأربعاء</option> <option value="thursday">الخميس</option> </select>
-      </div>
-      <div><label class="block text-slate-400 text-xs mb-1">نطاق الوقت</label> <select id="time-range" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-emerald-500"> <option value="morning">الصباح (7:00 - 10:00)</option> <option value="midday">الظهيرة (10:00 - 14:00)</option> <option value="afternoon">بعد الظهر (14:00 - 18:00)</option> <option value="evening">المساء (18:00 - 21:00)</option> </select>
-      </div><button type="submit" class="w-full py-2 rounded-lg bg-purple-500 hover:bg-purple-600 text-white font-medium text-sm transition-colors"> حفظ الجدول </button>
-     </form>
-    </div>
-   </div>
-  </div><!-- ==================== لوحة المتصدرين ==================== -->
-  <div id="leaderboard-view" class="h-full flex flex-col view-hidden">
-   <div class="flex-1 flex flex-col p-4 overflow-auto"><!-- Header -->
-    <div class="flex items-center justify-between mb-4"><button onclick="showView('landing')" class="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center">
-      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
-      </svg></button>
-     <h1 class="text-base font-semibold">لوحة المتصدرين</h1>
-     <div class="w-10 h-10 rounded-full bg-yellow-500/20 flex items-center justify-center"><span class="text-lg">🏅</span>
-     </div>
-    </div><!-- Trophy Icon -->
-    <div class="text-center mb-4">
-     <p class="text-2xl">🏆</p>
-     <p class="text-slate-500 text-xs mt-1">أفضل السائقين في الحرم الجامعي</p>
-    </div><!-- Leaderboard List -->
-    <div id="leaderboard-list" class="space-y-3"><!-- Will be populated by JavaScript -->
-    </div>
-   </div>
   </div>
+  
+  <!-- ==================== REGISTER VIEW ==================== -->
+  <div id="register-view" class="h-full flex flex-col view-hidden">
+    <div class="flex-1 flex flex-col p-6 overflow-auto">
+      <!-- Header -->
+      <div class="flex items-center justify-between mb-6">
+        <button onclick="showView('login')" class="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+          </svg>
+        </button>
+        <h1 class="text-lg font-bold">إنشاء حساب جديد</h1>
+        <div class="w-10 h-10"></div>
+      </div>
+      
+      <!-- User Type Selection -->
+      <div class="mb-6">
+        <p class="text-slate-400 text-sm mb-3">اختر نوع الحساب</p>
+        <div class="space-y-3">
+          <button onclick="selectUserType('student')" id="btn-student-type" class="w-full py-3 rounded-xl btn-primary text-white font-bold flex items-center justify-center gap-3">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+            </svg>
+            طالب
+          </button>
+          <button onclick="selectUserType('car-driver')" id="btn-car-driver-type" class="w-full py-3 rounded-xl bg-slate-800/50 border border-slate-700/50 text-slate-400 font-bold flex items-center justify-center gap-3">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+            </svg>
+            سائق سيارة
+          </button>
+          <button onclick="selectUserType('bus-driver')" id="btn-bus-driver-type" class="w-full py-3 rounded-xl bg-slate-800/50 border border-slate-700/50 text-slate-400 font-bold flex items-center justify-center gap-3">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h8m-8 4h8m-6 4h4M5 3h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2z"></path>
+            </svg>
+            سائق حافلة
+          </button>
+          <button onclick="selectUserType('admin')" id="btn-admin-type" class="w-full py-3 rounded-xl bg-slate-800/50 border border-slate-700/50 text-slate-400 font-bold flex items-center justify-center gap-3">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+            </svg>
+            إدارة
+          </button>
+        </div>
+      </div>
+      
+      <!-- Registration Form -->
+      <div id="registration-form" class="view-hidden space-y-4">
+        <!-- Common Fields -->
+        <div id="common-fields">
+          <div>
+            <label class="block text-slate-400 text-sm mb-2">الاسم الكامل</label>
+            <input id="reg-name" type="text" class="input-field" placeholder="أدخل اسمك الكامل">
+          </div>
+          
+          <div>
+            <label class="block text-slate-400 text-sm mb-2">البريد الإلكتروني</label>
+            <input id="reg-email" type="email" class="input-field" placeholder="أدخل بريدك الإلكتروني">
+          </div>
+          
+          <div>
+            <label class="block text-slate-400 text-sm mb-2">رقم الهاتف</label>
+            <input id="reg-phone" type="tel" class="input-field" placeholder="07701234567">
+          </div>
+          
+          <div>
+            <label class="block text-slate-400 text-sm mb-2">كلمة المرور</label>
+            <input id="reg-password" type="password" class="input-field" placeholder="اختر كلمة مرور قوية">
+          </div>
+        </div>
+        
+        <!-- Student Fields -->
+        <div id="student-fields" class="view-hidden">
+          <div>
+            <label class="block text-slate-400 text-sm mb-2">الجنس</label>
+            <select id="reg-gender" class="input-field">
+              <option value="">اختر</option>
+              <option value="male">ذكر</option>
+              <option value="female">أنثى</option>
+            </select>
+          </div>
+          
+          <div>
+            <label class="block text-slate-400 text-sm mb-2">العمر</label>
+            <input id="reg-age" type="number" class="input-field" placeholder="أدخل عمرك">
+          </div>
+          
+          <div>
+            <label class="block text-slate-400 text-sm mb-2">الإعاقة (اختياري)</label>
+            <input id="reg-disability" type="text" class="input-field" placeholder="لا توجد إعاقة">
+          </div>
+          
+          <div>
+            <label class="block text-slate-400 text-sm mb-2">ملاحظات (اختياري)</label>
+            <textarea id="reg-notes" class="input-field resize-none" rows="3" placeholder="ملاحظات إضافية"></textarea>
+          </div>
+        </div>
+        
+        <!-- Car Driver Fields -->
+        <div id="car-driver-fields" class="view-hidden">
+          <div>
+            <label class="block text-slate-400 text-sm mb-2">نموذج السيارة</label>
+            <input id="reg-car-model" type="text" class="input-field" placeholder="مثال: Toyota 2020">
+          </div>
+          
+          <div>
+            <label class="block text-slate-400 text-sm mb-2">لوحة السيارة</label>
+            <input id="reg-car-plate" type="text" class="input-field" placeholder="مثال: 1234 MOS">
+          </div>
+          
+          <div>
+            <label class="block text-slate-400 text-sm mb-2">رقم رخصة القيادة</label>
+            <input id="reg-driver-license" type="text" class="input-field" placeholder="أدخل رقم الرخصة">
+          </div>
+        </div>
+        
+        <!-- Bus Driver Fields -->
+        <div id="bus-driver-fields" class="view-hidden">
+          <div>
+            <label class="block text-slate-400 text-sm mb-2">نموذج الحافلة</label>
+            <input id="reg-bus-model" type="text" class="input-field" placeholder="مثال: Mercedes 2019">
+          </div>
+          
+          <div>
+            <label class="block text-slate-400 text-sm mb-2">لوحة الحافلة</label>
+            <input id="reg-bus-plate" type="text" class="input-field" placeholder="مثال: 5678 BUS">
+          </div>
+          
+          <div>
+            <label class="block text-slate-400 text-sm mb-2">رقم رخصة القيادة</label>
+            <input id="reg-bus-license" type="text" class="input-field" placeholder="أدخل رقم الرخصة">
+          </div>
+        </div>
+        
+        <!-- Submit Button -->
+        <button onclick="handleRegister()" class="w-full py-3 rounded-xl btn-primary text-white font-bold">
+          إنشاء الحساب
+        </button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- ==================== STUDENT DASHBOARD ==================== -->
+  <div id="student-dashboard-view" class="h-full flex flex-col view-hidden">
+    <!-- Top Navigation -->
+    <div class="flex items-center justify-between p-4 bg-slate-900/50 border-b border-slate-800">
+      <button onclick="handleLogout()" class="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+        </svg>
+      </button>
+      
+      <h1 class="text-lg font-bold">لوحة الطالب</h1>
+      
+      <div class="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center">
+        <span class="text-lg">👤</span>
+      </div>
+    </div>
+    
+    <!-- Tabs -->
+    <div class="flex gap-2 p-4 bg-slate-900/30 border-b border-slate-800">
+      <button onclick="switchStudentTab('zones')" id="student-tab-zones" class="flex-1 py-2 rounded-lg bg-emerald-500/20 border border-emerald-500 text-emerald-400 font-medium text-sm">المناطق</button>
+      <button onclick="switchStudentTab('request')" id="student-tab-request" class="flex-1 py-2 rounded-lg bg-slate-800/50 border border-slate-700/50 text-slate-400 font-medium text-sm">طلب توصيل</button>
+      <button onclick="switchStudentTab('history')" id="student-tab-history" class="flex-1 py-2 rounded-lg bg-slate-800/50 border border-slate-700/50 text-slate-400 font-medium text-sm">السجل</button>
+    </div>
+    
+    <!-- Content -->
+    <div class="flex-1 overflow-auto p-4">
+      <!-- Zones Tab -->
+      <div id="student-zones-tab">
+        <p class="text-slate-400 text-sm mb-4">اختر منطقة أو حدد وجهتك على الخريطة</p>
+        
+        <div class="space-y-2 mb-6">
+          <button onclick="selectZone('باب الصناعة', 1)" class="zone-button w-full">🏭 باب الصناعة</button>
+          <button onclick="selectZone('باب الرئاسة', 2)" class="zone-button w-full">🏢 باب الرئاسة</button>
+          <button onclick="selectZone('باب الملعب', 3)" class="zone-button w-full">⚽ باب الملعب</button>
+          <button onclick="selectZone('باب العلوم', 4)" class="zone-button w-full">🔬 باب العلوم</button>
+          <button onclick="selectZone('باب الاستشارية', 5)" class="zone-button w-full">🏥 باب الاستشارية</button>
+          <button onclick="selectZone('باب طب الأسنان', 6)" class="zone-button w-full">🦷 باب طب الأسنان</button>
+          <button onclick="selectZone('باب الزراعة', 7)" class="zone-button w-full">🌾 باب الزراعة</button>
+          <button onclick="selectZone('المكتبة المركزية', 8)" class="zone-button w-full">📚 المكتبة المركزية</button>
+          <button onclick="selectZone('المركز الطلابي', 9)" class="zone-button w-full">🎓 المركز الطلابي</button>
+        </div>
+        
+        <!-- Selected Zone Info -->
+        <div id="selected-zone-info" class="view-hidden gradient-card rounded-lg p-4 border border-slate-700/50 mb-4">
+          <p class="text-slate-400 text-xs mb-2">الوجهة المختارة</p>
+          <p id="selected-zone-name" class="text-white font-bold text-lg mb-3">--</p>
+          <p class="text-slate-400 text-xs mb-2">مقيّم بواسطة الذكاء الاصطناعي</p>
+          <div class="flex items-center gap-2 mb-3">
+            <span class="text-yellow-400">⭐</span>
+            <p id="zone-ai-rating" class="text-white">جودة عالية - توفر نقل</p>
+          </div>
+          <button onclick="switchStudentTab('request')" class="w-full py-2 rounded-lg btn-primary text-white font-bold text-sm">الطلب الآن</button>
+        </div>
+      </div>
+      
+      <!-- Request Tab -->
+      <div id="student-request-tab" class="view-hidden">
+        <div id="student-map" class="h-96 rounded-lg mb-4 border border-slate-700/50"></div>
+        
+        <div class="gradient-card rounded-lg p-4 border border-slate-700/50 mb-4">
+          <p class="text-slate-400 text-xs mb-2">الوجهة</p>
+          <p id="request-destination" class="text-white font-bold mb-4">اختر وجهة</p>
+          
+          <div class="space-y-2 mb-4">
+            <p class="text-slate-400 text-xs">عدد السائقين القريبين</p>
+            <div class="flex gap-2">
+              <div class="flex-1 text-center py-2 rounded-lg bg-slate-800/50">
+                <p class="text-lg font-bold text-blue-400">2</p>
+                <p class="text-xs text-slate-400">حافلات</p>
+              </div>
+              <div class="flex-1 text-center py-2 rounded-lg bg-slate-800/50">
+                <p class="text-lg font-bold text-amber-400">3</p>
+                <p class="text-xs text-slate-400">سيارات</p>
+              </div>
+            </div>
+          </div>
+          
+          <button id="request-button" onclick="requestRide()" class="w-full py-3 rounded-lg btn-primary text-white font-bold">
+            طلب توصيل
+          </button>
+        </div>
+      </div>
+      
+      <!-- History Tab -->
+      <div id="student-history-tab" class="view-hidden">
+        <p class="text-slate-400 text-sm">لم تقم برحلات بعد</p>
+      </div>
+    </div>
+  </div>
+  
+  <!-- ==================== DRIVER DASHBOARD ==================== -->
+  <div id="driver-dashboard-view" class="h-full flex flex-col view-hidden">
+    <div class="flex items-center justify-between p-4 bg-slate-900/50 border-b border-slate-800">
+      <button onclick="handleLogout()" class="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+        </svg>
+      </button>
+      
+      <h1 id="driver-title" class="text-lg font-bold">لوحة السائق</h1>
+      
+      <div id="driver-points-badge" class="px-3 py-1 rounded-full bg-amber-500/20 border border-amber-500 text-amber-400 text-sm font-bold">
+        0 نقطة
+      </div>
+    </div>
+    
+    <div class="flex gap-2 p-4 bg-slate-900/30 border-b border-slate-800">
+      <button onclick="switchDriverTab('map')" id="driver-tab-map" class="flex-1 py-2 rounded-lg bg-emerald-500/20 border border-emerald-500 text-emerald-400 font-medium text-sm">الخريطة</button>
+      <button onclick="switchDriverTab('requests')" id="driver-tab-requests" class="flex-1 py-2 rounded-lg bg-slate-800/50 border border-slate-700/50 text-slate-400 font-medium text-sm">الطلبات</button>
+      <button onclick="switchDriverTab('profile')" id="driver-tab-profile" class="flex-1 py-2 rounded-lg bg-slate-800/50 border border-slate-700/50 text-slate-400 font-medium text-sm">الملف</button>
+    </div>
+    
+    <div class="flex-1 overflow-auto">
+      <!-- Map Tab -->
+      <div id="driver-map-tab" class="h-full">
+        <div id="driver-map" class="h-full"></div>
+      </div>
+      
+      <!-- Requests Tab -->
+      <div id="driver-requests-tab" class="view-hidden p-4">
+        <div id="driver-requests-list" class="space-y-3">
+          <!-- Requests will be populated here -->
+        </div>
+      </div>
+      
+      <!-- Profile Tab -->
+      <div id="driver-profile-tab" class="view-hidden p-4">
+        <div class="gradient-card rounded-lg p-4 border border-slate-700/50 space-y-3">
+          <div>
+            <p class="text-slate-400 text-xs">الاسم</p>
+            <p id="driver-profile-name" class="text-white font-bold">--</p>
+          </div>
+          <div>
+            <p class="text-slate-400 text-xs">البريد الإلكتروني</p>
+            <p id="driver-profile-email" class="text-white">--</p>
+          </div>
+          <div>
+            <p class="text-slate-400 text-xs">رقم الهاتف</p>
+            <p id="driver-profile-phone" class="text-white">--</p>
+          </div>
+          <div id="driver-car-info">
+            <p class="text-slate-400 text-xs">السيارة</p>
+            <p id="driver-profile-car" class="text-white">--</p>
+          </div>
+          <div>
+            <p class="text-slate-400 text-xs">إجمالي النقاط</p>
+            <p id="driver-profile-points" class="text-amber-400 font-bold text-lg">0</p>
+          </div>
+          <div>
+            <p class="text-slate-400 text-xs">عدد الرحلات</p>
+            <p id="driver-profile-rides" class="text-white">0</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- ==================== ADMIN DASHBOARD ==================== -->
+  <div id="admin-dashboard-view" class="h-full flex flex-col view-hidden">
+    <div class="flex items-center justify-between p-4 bg-slate-900/50 border-b border-slate-800">
+      <button onclick="handleLogout()" class="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+        </svg>
+      </button>
+      
+      <h1 class="text-lg font-bold">لوحة الإدارة</h1>
+      
+      <div class="w-10 h-10"></div>
+    </div>
+    
+    <div class="flex gap-2 p-4 bg-slate-900/30 border-b border-slate-800">
+      <button onclick="switchAdminTab('drivers')" id="admin-tab-drivers" class="flex-1 py-2 rounded-lg bg-emerald-500/20 border border-emerald-500 text-emerald-400 font-medium text-sm">السائقون</button>
+      <button onclick="switchAdminTab('rewards')" id="admin-tab-rewards" class="flex-1 py-2 rounded-lg bg-slate-800/50 border border-slate-700/50 text-slate-400 font-medium text-sm">المكافآت</button>
+      <button onclick="switchAdminTab('schedule')" id="admin-tab-schedule" class="flex-1 py-2 rounded-lg bg-slate-800/50 border border-slate-700/50 text-slate-400 font-medium text-sm">الجدول</button>
+    </div>
+    
+    <div class="flex-1 overflow-auto p-4">
+      <!-- Drivers Tab -->
+      <div id="admin-drivers-tab">
+        <div id="admin-drivers-list" class="space-y-3">
+          <!-- Drivers will be listed here -->
+        </div>
+      </div>
+      
+      <!-- Rewards Tab -->
+      <div id="admin-rewards-tab" class="view-hidden">
+        <div id="admin-rewards-list" class="space-y-3">
+          <!-- Reward options -->
+        </div>
+      </div>
+      
+      <!-- Schedule Tab -->
+      <div id="admin-schedule-tab" class="view-hidden">
+        <form onsubmit="saveSchedule(event)" class="space-y-4">
+          <div>
+            <label class="block text-slate-400 text-sm mb-2">اليوم</label>
+            <select class="input-field">
+              <option>الأحد</option>
+              <option>الاثنين</option>
+              <option>الثلاثاء</option>
+              <option>الأربعاء</option>
+              <option>الخميس</option>
+            </select>
+          </div>
+          <button type="submit" class="w-full py-3 rounded-lg btn-primary text-white font-bold">حفظ</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
   <script>
     // ==================== CONFIGURATION ====================
     const defaultConfig = {
@@ -390,35 +601,49 @@
     };
     
     let config = { ...defaultConfig };
-    
-    // University of Mosul coordinates
     const MOSUL_CENTER = [36.3417, 43.1195];
     
-    // Map instances
-    let studentMap = null;
-    let busMap = null;
+    // Current user state
+    let currentUser = null;
+    let allUsers = [];
     
-    // Marker references
-    let studentMarker = null;
-    let driverMarkers = [];
-    let studentMarkersOnBusMap = [];
-    let busMarker = null;
-    
-    // Simulation state
-    let simulationIntervals = [];
-    let pickupRequested = false;
-    let pickupAccepted = false;
-    
-    // Driver data
-    const driversData = [
-      { id: 1, name: 'أحمد علي', points: 120, rides: 8, phone: '07701234567' },
-      { id: 2, name: 'محمد حسن', points: 95, rides: 6, phone: '07702345678' },
-      { id: 3, name: 'علي محمود', points: 85, rides: 5, phone: '07703456789' },
-      { id: 4, name: 'سارة خالد', points: 110, rides: 7, phone: '07704567890' },
-      { id: 5, name: 'فاطمة عمر', points: 75, rides: 4, phone: '07705678901' }
+    // Zone data
+    const zones = [
+      { name: 'باب الصناعة', id: 1, coords: [36.3420, 43.1180], emoji: '🏭' },
+      { name: 'باب الرئاسة', id: 2, coords: [36.3410, 43.1200], emoji: '🏢' },
+      { name: 'باب الملعب', id: 3, coords: [36.3430, 43.1185], emoji: '⚽' },
+      { name: 'باب العلوم', id: 4, coords: [36.3400, 43.1170], emoji: '🔬' },
+      { name: 'باب الاستشارية', id: 5, coords: [36.3390, 43.1195], emoji: '🏥' },
+      { name: 'باب طب الأسنان', id: 6, coords: [36.3405, 43.1160], emoji: '🦷' },
+      { name: 'باب الزراعة', id: 7, coords: [36.3450, 43.1200], emoji: '🌾' },
+      { name: 'المكتبة المركزية', id: 8, coords: [36.3415, 43.1145], emoji: '📚' },
+      { name: 'المركز الطلابي', id: 9, coords: [36.3425, 43.1210], emoji: '🎓' }
     ];
     
+    // Selected zone
+    let selectedZone = null;
+    let studentMap = null;
+    let driverMap = null;
+    
+    // ==================== SDK INITIALIZATION ====================
+    
+    const dataHandler = {
+      onDataChanged(data) {
+        allUsers = data;
+      }
+    };
+    
+    async function initDataSDK() {
+      if (window.dataSdk) {
+        const result = await window.dataSdk.init(dataHandler);
+        if (!result.isOk) {
+          console.error('Failed to initialize Data SDK');
+        }
+      }
+    }
+    
     // ==================== VIEW MANAGEMENT ====================
+    
     function showView(viewName) {
       document.querySelectorAll('[id$="-view"]').forEach(view => {
         view.classList.add('view-hidden');
@@ -428,84 +653,176 @@
       if (targetView) {
         targetView.classList.remove('view-hidden');
       }
+    }
+    
+    function selectUserType(type) {
+      document.querySelectorAll('[id^="btn-"][id$="-type"]').forEach(btn => {
+        btn.classList.remove('btn-primary', 'btn-secondary', 'btn-amber');
+        btn.classList.add('bg-slate-800/50', 'border-slate-700/50', 'text-slate-400');
+      });
       
-      simulationIntervals.forEach(interval => clearInterval(interval));
-      simulationIntervals = [];
+      const selectedBtn = document.getElementById(`btn-${type}-type`);
+      selectedBtn.classList.remove('bg-slate-800/50', 'border-slate-700/50', 'text-slate-400');
+      selectedBtn.classList.add('btn-primary');
       
-      setTimeout(() => {
-        switch(viewName) {
-          case 'student':
-            initStudentMap();
-            startStudentSimulation();
-            break;
-          case 'bus-driver':
-            initBusMap();
-            startBusSimulation();
-            break;
-          case 'regular-driver':
-            startDriverSimulation();
-            break;
-          case 'admin':
-            initAdminPanel();
-            break;
-          case 'leaderboard':
-            initLeaderboard();
-            break;
+      // Show/hide form fields
+      document.getElementById('registration-form').classList.remove('view-hidden');
+      document.getElementById('student-fields').classList.add('view-hidden');
+      document.getElementById('car-driver-fields').classList.add('view-hidden');
+      document.getElementById('bus-driver-fields').classList.add('view-hidden');
+      
+      if (type === 'student') {
+        document.getElementById('student-fields').classList.remove('view-hidden');
+      } else if (type === 'car-driver') {
+        document.getElementById('car-driver-fields').classList.remove('view-hidden');
+      } else if (type === 'bus-driver') {
+        document.getElementById('bus-driver-fields').classList.remove('view-hidden');
+      }
+      
+      window.selectedUserType = type;
+    }
+    
+    // ==================== AUTHENTICATION ====================
+    
+    function handleLogin() {
+      const email = document.getElementById('login-email').value.trim();
+      const password = document.getElementById('login-password').value.trim();
+      
+      if (!email || !password) {
+        alert('الرجاء ملء جميع الحقول');
+        return;
+      }
+      
+      // Simulate finding user
+      const user = allUsers.find(u => u.email === email);
+      if (user) {
+        currentUser = user;
+        if (user.user_type === 'student') {
+          showView('student-dashboard');
+          initStudentDashboard();
+        } else if (user.user_type === 'car-driver' || user.user_type === 'bus-driver') {
+          showView('driver-dashboard');
+          initDriverDashboard();
+        } else if (user.user_type === 'admin') {
+          showView('admin-dashboard');
+          initAdminDashboard();
         }
-      }, 100);
+      } else {
+        alert('بيانات تسجيل الدخول غير صحيحة');
+      }
     }
     
-    function switchAdminTab(tab) {
-      // Hide all tabs
-      document.getElementById('rewards-tab').classList.add('view-hidden');
-      document.getElementById('drivers-tab').classList.add('view-hidden');
-      document.getElementById('schedule-tab').classList.add('view-hidden');
+    function handleRegister() {
+      const userType = window.selectedUserType;
+      if (!userType) {
+        alert('الرجاء اختيار نوع الحساب');
+        return;
+      }
       
-      // Reset button styles
-      document.getElementById('tab-rewards').classList.remove('bg-emerald-500/20', 'border-emerald-500', 'text-emerald-400');
-      document.getElementById('tab-drivers').classList.remove('bg-emerald-500/20', 'border-emerald-500', 'text-emerald-400');
-      document.getElementById('tab-schedule').classList.remove('bg-emerald-500/20', 'border-emerald-500', 'text-emerald-400');
-      document.getElementById('tab-rewards').classList.add('bg-slate-800/50', 'border-slate-700/50', 'text-slate-400');
-      document.getElementById('tab-drivers').classList.add('bg-slate-800/50', 'border-slate-700/50', 'text-slate-400');
-      document.getElementById('tab-schedule').classList.add('bg-slate-800/50', 'border-slate-700/50', 'text-slate-400');
+      const name = document.getElementById('reg-name').value.trim();
+      const email = document.getElementById('reg-email').value.trim();
+      const phone = document.getElementById('reg-phone').value.trim();
+      const password = document.getElementById('reg-password').value.trim();
       
-      // Show selected tab and highlight button
-      document.getElementById(`${tab}-tab`).classList.remove('view-hidden');
-      document.getElementById(`tab-${tab}`).classList.remove('bg-slate-800/50', 'border-slate-700/50', 'text-slate-400');
-      document.getElementById(`tab-${tab}`).classList.add('bg-emerald-500/20', 'border-emerald-500', 'text-emerald-400');
-    }
-    
-    // ==================== MAP INITIALIZATION ====================
-    
-    function createCustomIcon(type, size = 40) {
-      const colors = {
-        student: { bg: '#3b82f6', emoji: '👤' },
-        bus: { bg: '#10b981', emoji: '🚌' },
-        car: { bg: '#f59e0b', emoji: '🚗' },
-        you: { bg: '#ef4444', emoji: '📍' }
+      if (!name || !email || !phone || !password) {
+        alert('الرجاء ملء جميع الحقول المطلوبة');
+        return;
+      }
+      
+      const userData = {
+        user_id: Date.now().toString(),
+        user_type: userType,
+        name,
+        email,
+        phone,
+        points: 0,
+        rides: 0
       };
       
-      const c = colors[type] || colors.student;
+      if (userType === 'student') {
+        userData.gender = document.getElementById('reg-gender').value;
+        userData.age = parseInt(document.getElementById('reg-age').value) || 0;
+        userData.disability = document.getElementById('reg-disability').value || 'لا توجد';
+        userData.notes = document.getElementById('reg-notes').value || '';
+      } else if (userType === 'car-driver') {
+        userData.car_model = document.getElementById('reg-car-model').value.trim();
+        userData.car_plate = document.getElementById('reg-car-plate').value.trim();
+        userData.driver_license = document.getElementById('reg-driver-license').value.trim();
+      } else if (userType === 'bus-driver') {
+        userData.car_model = document.getElementById('reg-bus-model').value.trim();
+        userData.car_plate = document.getElementById('reg-bus-plate').value.trim();
+        userData.driver_license = document.getElementById('reg-bus-license').value.trim();
+      }
       
-      return L.divIcon({
-        html: `
-          <div style="
-            width: ${size}px;
-            height: ${size}px;
-            background: ${c.bg};
-            border-radius: 50%;
-            border: 3px solid white;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: ${size * 0.5}px;
-          ">${c.emoji}</div>
-        `,
-        className: 'custom-marker-icon',
-        iconSize: [size, size],
-        iconAnchor: [size/2, size/2]
-      });
+      // Save to Data SDK
+      if (window.dataSdk) {
+        window.dataSdk.create(userData).then(result => {
+          if (result.isOk) {
+            alert('تم إنشاء الحساب بنجاح! الرجاء تسجيل الدخول');
+            currentUser = userData;
+            document.getElementById('login-email').value = email;
+            document.getElementById('login-password').value = password;
+            showView('login');
+          } else {
+            alert('حدث خطأ: ' + result.error.message);
+          }
+        });
+      }
+    }
+    
+    function handleLogout() {
+      currentUser = null;
+      selectedZone = null;
+      showView('login');
+      document.getElementById('login-email').value = '';
+      document.getElementById('login-password').value = '';
+    }
+    
+    // ==================== STUDENT DASHBOARD ====================
+    
+    function initStudentDashboard() {
+      switchStudentTab('zones');
+    }
+    
+    function switchStudentTab(tab) {
+      document.getElementById('student-zones-tab').classList.add('view-hidden');
+      document.getElementById('student-request-tab').classList.add('view-hidden');
+      document.getElementById('student-history-tab').classList.add('view-hidden');
+      
+      document.getElementById('student-tab-zones').classList.remove('bg-emerald-500/20', 'border-emerald-500', 'text-emerald-400');
+      document.getElementById('student-tab-request').classList.remove('bg-emerald-500/20', 'border-emerald-500', 'text-emerald-400');
+      document.getElementById('student-tab-history').classList.remove('bg-emerald-500/20', 'border-emerald-500', 'text-emerald-400');
+      
+      document.getElementById('student-tab-zones').classList.add('bg-slate-800/50', 'border-slate-700/50', 'text-slate-400');
+      document.getElementById('student-tab-request').classList.add('bg-slate-800/50', 'border-slate-700/50', 'text-slate-400');
+      document.getElementById('student-tab-history').classList.add('bg-slate-800/50', 'border-slate-700/50', 'text-slate-400');
+      
+      if (tab === 'zones') {
+        document.getElementById('student-zones-tab').classList.remove('view-hidden');
+        document.getElementById('student-tab-zones').classList.remove('bg-slate-800/50', 'border-slate-700/50', 'text-slate-400');
+        document.getElementById('student-tab-zones').classList.add('bg-emerald-500/20', 'border-emerald-500', 'text-emerald-400');
+      } else if (tab === 'request') {
+        document.getElementById('student-request-tab').classList.remove('view-hidden');
+        document.getElementById('student-tab-request').classList.remove('bg-slate-800/50', 'border-slate-700/50', 'text-slate-400');
+        document.getElementById('student-tab-request').classList.add('bg-emerald-500/20', 'border-emerald-500', 'text-emerald-400');
+        setTimeout(() => initStudentMap(), 100);
+      } else if (tab === 'history') {
+        document.getElementById('student-history-tab').classList.remove('view-hidden');
+        document.getElementById('student-tab-history').classList.remove('bg-slate-800/50', 'border-slate-700/50', 'text-slate-400');
+        document.getElementById('student-tab-history').classList.add('bg-emerald-500/20', 'border-emerald-500', 'text-emerald-400');
+      }
+    }
+    
+    function selectZone(zoneName, zoneId) {
+      selectedZone = zones.find(z => z.id === zoneId);
+      
+      document.querySelectorAll('.zone-button').forEach(btn => btn.classList.remove('active'));
+      event.target.closest('.zone-button').classList.add('active');
+      
+      document.getElementById('selected-zone-info').classList.remove('view-hidden');
+      document.getElementById('selected-zone-name').textContent = zoneName;
+      document.getElementById('zone-ai-rating').textContent = '⭐ جودة عالية - توفر نقل - مسافة: ' + Math.floor(Math.random() * 5 + 1) + ' كم';
+      document.getElementById('request-destination').textContent = zoneName;
     }
     
     function initStudentMap() {
@@ -525,227 +842,214 @@
         maxZoom: 19
       }).addTo(studentMap);
       
-      const studentPos = getRandomPosition(MOSUL_CENTER, 0.002);
-      studentMarker = L.marker(studentPos, {
-        icon: createCustomIcon('you', 44)
-      }).addTo(studentMap);
+      // Add zone markers
+      zones.forEach(zone => {
+        L.marker(zone.coords, {
+          icon: L.divIcon({
+            html: `<div style="font-size: 24px;">${zone.emoji}</div>`,
+            className: 'zone-marker',
+            iconSize: [40, 40]
+          })
+        }).addTo(studentMap);
+      });
       
-      L.circle(studentPos, {
-        radius: 30,
-        color: '#ef4444',
-        fillColor: '#ef4444',
-        fillOpacity: 0.2,
-        weight: 2
-      }).addTo(studentMap);
-      
-      addNearbyDrivers(studentMap, studentPos);
-    }
-    
-    function addNearbyDrivers(map, centerPos) {
-      driverMarkers = [];
-      
-      for (let i = 0; i < 2; i++) {
-        const pos = getRandomPosition(centerPos, 0.005);
-        const marker = L.marker(pos, {
-          icon: createCustomIcon('bus', 38)
-        }).addTo(map);
-        driverMarkers.push({ marker, type: 'bus', basePos: pos });
-      }
-      
-      for (let i = 0; i < 3; i++) {
-        const pos = getRandomPosition(centerPos, 0.006);
-        const marker = L.marker(pos, {
-          icon: createCustomIcon('car', 34)
-        }).addTo(map);
-        driverMarkers.push({ marker, type: 'car', basePos: pos });
+      // Add student marker
+      if (selectedZone) {
+        L.marker(MOSUL_CENTER, {
+          icon: L.divIcon({
+            html: '<div style="width: 30px; height: 30px; background: #ef4444; border-radius: 50%; border: 3px solid white; display: flex; align-items: center; justify-content: center; font-size: 16px;">📍</div>',
+            className: '',
+            iconSize: [30, 30]
+          })
+        }).addTo(studentMap);
       }
     }
     
-    function initBusMap() {
-      if (busMap) {
-        busMap.remove();
+    function requestRide() {
+      if (!selectedZone) {
+        alert('الرجاء اختيار وجهة أولاً');
+        return;
       }
       
-      const mapContainer = document.getElementById('bus-map');
+      const btn = document.getElementById('request-button');
+      btn.textContent = 'جاري البحث...';
+      btn.disabled = true;
+      
+      setTimeout(() => {
+        btn.textContent = 'تم تأكيد الرحلة ✓';
+        btn.classList.add('bg-emerald-600');
+      }, 2000);
+    }
+    
+    // ==================== DRIVER DASHBOARD ====================
+    
+    function initDriverDashboard() {
+      document.getElementById('driver-profile-name').textContent = currentUser.name;
+      document.getElementById('driver-profile-email').textContent = currentUser.email;
+      document.getElementById('driver-profile-phone').textContent = currentUser.phone;
+      document.getElementById('driver-profile-points').textContent = currentUser.points || 0;
+      document.getElementById('driver-profile-rides').textContent = currentUser.rides || 0;
+      document.getElementById('driver-points-badge').textContent = (currentUser.points || 0) + ' نقطة';
+      
+      if (currentUser.user_type === 'car-driver') {
+        document.getElementById('driver-car-info').innerHTML = `
+          <p class="text-slate-400 text-xs">السيارة</p>
+          <p class="text-white">${currentUser.car_model} - ${currentUser.car_plate}</p>
+        `;
+        document.getElementById('driver-title').textContent = 'لوحة سائق السيارة';
+      } else {
+        document.getElementById('driver-car-info').innerHTML = `
+          <p class="text-slate-400 text-xs">الحافلة</p>
+          <p class="text-white">${currentUser.car_model} - ${currentUser.car_plate}</p>
+        `;
+        document.getElementById('driver-title').textContent = 'لوحة سائق الحافلة';
+      }
+      
+      switchDriverTab('map');
+    }
+    
+    function switchDriverTab(tab) {
+      document.getElementById('driver-map-tab').classList.add('view-hidden');
+      document.getElementById('driver-requests-tab').classList.add('view-hidden');
+      document.getElementById('driver-profile-tab').classList.add('view-hidden');
+      
+      document.getElementById('driver-tab-map').classList.remove('bg-emerald-500/20', 'border-emerald-500', 'text-emerald-400');
+      document.getElementById('driver-tab-requests').classList.remove('bg-emerald-500/20', 'border-emerald-500', 'text-emerald-400');
+      document.getElementById('driver-tab-profile').classList.remove('bg-emerald-500/20', 'border-emerald-500', 'text-emerald-400');
+      
+      document.getElementById('driver-tab-map').classList.add('bg-slate-800/50', 'border-slate-700/50', 'text-slate-400');
+      document.getElementById('driver-tab-requests').classList.add('bg-slate-800/50', 'border-slate-700/50', 'text-slate-400');
+      document.getElementById('driver-tab-profile').classList.add('bg-slate-800/50', 'border-slate-700/50', 'text-slate-400');
+      
+      if (tab === 'map') {
+        document.getElementById('driver-map-tab').classList.remove('view-hidden');
+        document.getElementById('driver-tab-map').classList.remove('bg-slate-800/50', 'border-slate-700/50', 'text-slate-400');
+        document.getElementById('driver-tab-map').classList.add('bg-emerald-500/20', 'border-emerald-500', 'text-emerald-400');
+        setTimeout(() => initDriverMap(), 100);
+      } else if (tab === 'requests') {
+        document.getElementById('driver-requests-tab').classList.remove('view-hidden');
+        document.getElementById('driver-tab-requests').classList.remove('bg-slate-800/50', 'border-slate-700/50', 'text-slate-400');
+        document.getElementById('driver-tab-requests').classList.add('bg-emerald-500/20', 'border-emerald-500', 'text-emerald-400');
+      } else if (tab === 'profile') {
+        document.getElementById('driver-profile-tab').classList.remove('view-hidden');
+        document.getElementById('driver-tab-profile').classList.remove('bg-slate-800/50', 'border-slate-700/50', 'text-slate-400');
+        document.getElementById('driver-tab-profile').classList.add('bg-emerald-500/20', 'border-emerald-500', 'text-emerald-400');
+      }
+    }
+    
+    function initDriverMap() {
+      if (driverMap) {
+        driverMap.remove();
+      }
+      
+      const mapContainer = document.getElementById('driver-map');
       if (!mapContainer) return;
       
-      busMap = L.map('bus-map', {
+      driverMap = L.map('driver-map', {
         zoomControl: false
       }).setView(MOSUL_CENTER, 15);
       
       L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
         attribution: '© OpenStreetMap',
         maxZoom: 19
-      }).addTo(busMap);
+      }).addTo(driverMap);
       
-      busMarker = L.marker(MOSUL_CENTER, {
-        icon: createCustomIcon('bus', 48)
-      }).addTo(busMap);
-      
-      addStudentMarkers(busMap);
+      // Add zone markers
+      zones.forEach(zone => {
+        L.marker(zone.coords, {
+          icon: L.divIcon({
+            html: `<div style="font-size: 20px;">${zone.emoji}</div>`,
+            className: 'zone-marker',
+            iconSize: [35, 35]
+          })
+        }).addTo(driverMap);
+      });
     }
     
-    function addStudentMarkers(map) {
-      studentMarkersOnBusMap = [];
+    // ==================== ADMIN DASHBOARD ====================
+    
+    function initAdminDashboard() {
+      switchAdminTab('drivers');
+      populateAdminDriversList();
+    }
+    
+    function switchAdminTab(tab) {
+      document.getElementById('admin-drivers-tab').classList.add('view-hidden');
+      document.getElementById('admin-rewards-tab').classList.add('view-hidden');
+      document.getElementById('admin-schedule-tab').classList.add('view-hidden');
       
-      for (let i = 0; i < 8; i++) {
-        const pos = getRandomPosition(MOSUL_CENTER, 0.008);
-        const marker = L.marker(pos, {
-          icon: createCustomIcon('student', 28)
-        }).addTo(map);
-        studentMarkersOnBusMap.push({ marker, basePos: pos });
+      document.getElementById('admin-tab-drivers').classList.remove('bg-emerald-500/20', 'border-emerald-500', 'text-emerald-400');
+      document.getElementById('admin-tab-rewards').classList.remove('bg-emerald-500/20', 'border-emerald-500', 'text-emerald-400');
+      document.getElementById('admin-tab-schedule').classList.remove('bg-emerald-500/20', 'border-emerald-500', 'text-emerald-400');
+      
+      document.getElementById('admin-tab-drivers').classList.add('bg-slate-800/50', 'border-slate-700/50', 'text-slate-400');
+      document.getElementById('admin-tab-rewards').classList.add('bg-slate-800/50', 'border-slate-700/50', 'text-slate-400');
+      document.getElementById('admin-tab-schedule').classList.add('bg-slate-800/50', 'border-slate-700/50', 'text-slate-400');
+      
+      if (tab === 'drivers') {
+        document.getElementById('admin-drivers-tab').classList.remove('view-hidden');
+        document.getElementById('admin-tab-drivers').classList.remove('bg-slate-800/50', 'border-slate-700/50', 'text-slate-400');
+        document.getElementById('admin-tab-drivers').classList.add('bg-emerald-500/20', 'border-emerald-500', 'text-emerald-400');
+      } else if (tab === 'rewards') {
+        document.getElementById('admin-rewards-tab').classList.remove('view-hidden');
+        document.getElementById('admin-tab-rewards').classList.remove('bg-slate-800/50', 'border-slate-700/50', 'text-slate-400');
+        document.getElementById('admin-tab-rewards').classList.add('bg-emerald-500/20', 'border-emerald-500', 'text-emerald-400');
+        populateRewardsList();
+      } else if (tab === 'schedule') {
+        document.getElementById('admin-schedule-tab').classList.remove('view-hidden');
+        document.getElementById('admin-tab-schedule').classList.remove('bg-slate-800/50', 'border-slate-700/50', 'text-slate-400');
+        document.getElementById('admin-tab-schedule').classList.add('bg-emerald-500/20', 'border-emerald-500', 'text-emerald-400');
       }
     }
     
-    // ==================== SIMULATION FUNCTIONS ====================
-    
-    function getRandomPosition(center, range) {
-      return [
-        center[0] + (Math.random() - 0.5) * range,
-        center[1] + (Math.random() - 0.5) * range
-      ];
-    }
-    
-    function startStudentSimulation() {
-      const moveInterval = setInterval(() => {
-        driverMarkers.forEach(driver => {
-          const newPos = getRandomPosition(driver.basePos, 0.001);
-          driver.marker.setLatLng(newPos);
-        });
-      }, 3000);
-      simulationIntervals.push(moveInterval);
-      
-      const statusMessages = [
-        { text: 'جاري البحث عن وسائل نقل قريبة...', sub: 'جاري تحليل أنماط الطلب' },
-        { text: '2 حافلة تقترب من منطقتك', sub: 'المدة المتوقعة: 3-5 دقائق' },
-        { text: 'تم اكتشاف طلب عالي بالقرب من موقعك', sub: 'يُنصح برحلة مشتركة للتوصيل بسرعة أكبر' }
-      ];
-      
-      let statusIndex = 0;
-      const statusInterval = setInterval(() => {
-        if (!pickupRequested) {
-          statusIndex = (statusIndex + 1) % statusMessages.length;
-          document.getElementById('student-status-text').textContent = statusMessages[statusIndex].text;
-          document.getElementById('student-status-sub').textContent = statusMessages[statusIndex].sub;
-        }
-      }, 5000);
-      simulationIntervals.push(statusInterval);
-      
-      const etaInterval = setInterval(() => {
-        const eta = Math.floor(Math.random() * 5) + 2;
-        document.getElementById('eta-time').textContent = eta + 'د';
-      }, 8000);
-      simulationIntervals.push(etaInterval);
-    }
-    
-    function startBusSimulation() {
-      let routeIndex = 0;
-      const routePoints = [
-        [36.3417, 43.1195],
-        [36.3430, 43.1200],
-        [36.3440, 43.1180],
-        [36.3420, 43.1160],
-        [36.3400, 43.1170],
-        [36.3410, 43.1190]
-      ];
-      
-      const busInterval = setInterval(() => {
-        routeIndex = (routeIndex + 1) % routePoints.length;
-        if (busMarker) {
-          busMarker.setLatLng(routePoints[routeIndex]);
-        }
-        
-        const students = Math.floor(Math.random() * 8) + 8;
-        const stops = Math.floor(Math.random() * 3) + 2;
-        const eta = (stops * 5) + Math.floor(Math.random() * 5);
-        
-        document.getElementById('bus-students').textContent = students;
-        document.getElementById('bus-stops').textContent = stops;
-        document.getElementById('bus-eta').textContent = eta + 'د';
-      }, 4000);
-      simulationIntervals.push(busInterval);
-      
-      const studentMoveInterval = setInterval(() => {
-        studentMarkersOnBusMap.forEach(student => {
-          const newPos = getRandomPosition(student.basePos, 0.0005);
-          student.marker.setLatLng(newPos);
-        });
-      }, 5000);
-      simulationIntervals.push(studentMoveInterval);
-    }
-    
-    function startDriverSimulation() {
-      const countInterval = setInterval(() => {
-        if (!pickupAccepted) {
-          const count = Math.floor(Math.random() * 3) + 1;
-          const distance = (Math.floor(Math.random() * 4) + 2) * 100;
-          document.getElementById('driver-student-count').textContent = count;
-          document.getElementById('driver-distance').textContent = `≈ ${distance} م`;
-        }
-      }, 6000);
-      simulationIntervals.push(countInterval);
-    }
-    
-    // ==================== ADMIN PANEL ====================
-    
-    function initAdminPanel() {
-      switchAdminTab('rewards');
-      populateRewardsList();
-      populateDriversList();
-    }
-    
-    function populateRewardsList() {
-      const list = document.getElementById('drivers-list');
+    function populateAdminDriversList() {
+      const list = document.getElementById('admin-drivers-list');
       list.innerHTML = '';
       
-      const sortedDrivers = [...driversData].sort((a, b) => b.points - a.points);
+      const drivers = allUsers.filter(u => u.user_type === 'car-driver' || u.user_type === 'bus-driver');
       
-      sortedDrivers.forEach((driver, index) => {
-        const rewards = ['كتاب شكر', 'شهادة عمل تطوعي', 'مكافأة مالية'];
+      drivers.forEach((driver, index) => {
         const card = document.createElement('div');
         card.className = 'gradient-card rounded-lg p-3 border border-slate-700/50';
         card.innerHTML = `
-          <div class="flex items-center justify-between mb-3">
+          <div class="flex items-center justify-between">
             <div>
-              <p class="text-white font-medium text-sm">${driver.name}</p>
-              <p class="text-slate-400 text-xs">النقاط: ${driver.points}</p>
+              <p class="text-white font-bold">${driver.name}</p>
+              <p class="text-slate-500 text-xs">${driver.user_type === 'car-driver' ? '🚗' : '🚌'} ${driver.car_model}</p>
             </div>
-            <span class="text-2xl">${index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '⭐'}</span>
-          </div>
-          <div class="flex gap-2">
-            ${rewards.map(reward => `
-              <button onclick="giveReward('${driver.name}', '${reward}')" class="flex-1 py-2 rounded-lg bg-emerald-500/20 border border-emerald-500/50 text-emerald-400 text-xs font-medium hover:bg-emerald-500/30 transition-colors">
-                ${reward}
-              </button>
-            `).join('')}
+            <div class="text-right">
+              <p class="text-amber-400 font-bold text-lg">${driver.points || 0}</p>
+              <p class="text-slate-500 text-xs">${driver.rides || 0} رحلة</p>
+            </div>
           </div>
         `;
         list.appendChild(card);
       });
     }
     
-    function populateDriversList() {
-      const list = document.getElementById('all-drivers-list');
+    function populateRewardsList() {
+      const list = document.getElementById('admin-rewards-list');
       list.innerHTML = '';
       
-      const sortedDrivers = [...driversData].sort((a, b) => b.points - a.points);
+      const drivers = allUsers.filter(u => u.user_type === 'car-driver' || u.user_type === 'bus-driver').sort((a, b) => (b.points || 0) - (a.points || 0));
+      const rewards = ['كتاب شكر', 'شهادة عمل تطوعي'];
       
-      sortedDrivers.forEach((driver, index) => {
+      drivers.forEach((driver) => {
         const card = document.createElement('div');
         card.className = 'gradient-card rounded-lg p-3 border border-slate-700/50';
         card.innerHTML = `
-          <div class="flex items-center gap-3">
-            <div class="w-12 h-12 rounded-full bg-slate-700/50 flex items-center justify-center text-lg flex-shrink-0">
-              ${index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '⭐'}
+          <div class="flex items-center justify-between mb-3">
+            <div>
+              <p class="text-white font-bold">${driver.name}</p>
+              <p class="text-slate-500 text-xs">${driver.points || 0} نقطة</p>
             </div>
-            <div class="flex-1">
-              <p class="text-white font-medium text-sm">${driver.name}</p>
-              <p class="text-slate-500 text-xs">${driver.phone}</p>
-            </div>
-            <div class="text-right">
-              <p class="text-amber-400 font-bold text-lg">${driver.points}</p>
-              <p class="text-slate-500 text-xs">${driver.rides} رحلة</p>
-            </div>
+          </div>
+          <div class="flex gap-2">
+            ${rewards.map(reward => `
+              <button onclick="giveReward('${driver.name}', '${reward}')" class="flex-1 py-2 rounded-lg bg-emerald-500/20 border border-emerald-500/50 text-emerald-400 text-xs font-medium hover:bg-emerald-500/30">
+                ${reward}
+              </button>
+            `).join('')}
           </div>
         `;
         list.appendChild(card);
@@ -761,109 +1065,10 @@
       alert('تم حفظ الجدول بنجاح!');
     }
     
-    // ==================== LEADERBOARD ====================
-    
-    function initLeaderboard() {
-      const leaderboardList = document.getElementById('leaderboard-list');
-      leaderboardList.innerHTML = '';
-      
-      const sortedDrivers = [...driversData].sort((a, b) => b.points - a.points);
-      
-      sortedDrivers.forEach((driver, index) => {
-        const medals = ['🥇', '🥈', '🥉'];
-        const medal = medals[index] || '⭐';
-        
-        const card = document.createElement('div');
-        card.className = 'gradient-card rounded-lg p-4 border border-slate-700/50 flex items-center gap-4';
-        card.innerHTML = `
-          <div class="text-3xl">${medal}</div>
-          <div class="flex-1">
-            <p class="text-white font-bold">${driver.name}</p>
-            <p class="text-slate-400 text-xs mt-1">${driver.rides} رحلة</p>
-          </div>
-          <div class="text-right">
-            <p class="text-amber-400 font-bold text-2xl">${driver.points}</p>
-            <p class="text-slate-500 text-xs">نقطة</p>
-          </div>
-        `;
-        leaderboardList.appendChild(card);
-      });
-    }
-    
-    // ==================== USER ACTIONS ====================
-    
-    function requestPickup() {
-      pickupRequested = true;
-      const btn = document.getElementById('request-pickup-btn');
-      const statusText = document.getElementById('student-status-text');
-      const statusSub = document.getElementById('student-status-sub');
-      
-      btn.innerHTML = `
-        <svg class="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-        </svg>
-        جاري البحث...
-      `;
-      btn.disabled = true;
-      btn.classList.add('opacity-70');
-      
-      statusText.textContent = 'جاري البحث عن وسائل نقل قريبة...';
-      statusSub.textContent = 'جاري مطابقة أفضل رحلة لك';
-      
-      setTimeout(() => {
-        statusText.textContent = '🚌 تم تعيين الحافلة رقم 7 لك!';
-        statusSub.textContent = 'ستصل خلال حوالي 3 دقائق';
-        
-        btn.innerHTML = `
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-          </svg>
-          تم تأكيد الرحلة
-        `;
-        btn.classList.remove('btn-primary');
-        btn.classList.add('bg-emerald-600');
-      }, 3000);
-    }
-    
-    function acceptPickup() {
-      pickupAccepted = true;
-      const btn = document.getElementById('accept-pickup-btn');
-      const studentsCard = document.getElementById('driver-students-card');
-      const bonusCard = document.getElementById('bonus-card');
-      const dailyLimit = document.getElementById('driver-daily-limit');
-      
-      btn.innerHTML = `
-        <svg class="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-        </svg>
-        جاري المعالجة...
-      `;
-      
-      setTimeout(() => {
-        studentsCard.classList.add('view-hidden');
-        bonusCard.classList.remove('view-hidden');
-        btn.classList.add('view-hidden');
-        dailyLimit.textContent = '0';
-        
-        // Update driver points
-        document.getElementById('driver-points').textContent = '170';
-      }, 2000);
-    }
-    
     // ==================== ELEMENT SDK ====================
     
     async function onConfigChange(newConfig) {
       config = { ...config, ...newConfig };
-      
-      const titleEl = document.getElementById('main-title');
-      if (titleEl) {
-        titleEl.textContent = config.app_title || defaultConfig.app_title;
-      }
-      
-      const subtitleEl = document.getElementById('main-subtitle');
-      if (subtitleEl) {
-        subtitleEl.textContent = config.subtitle || defaultConfig.subtitle;
-      }
     }
     
     function mapToCapabilities(config) {
@@ -891,7 +1096,9 @@
       });
     }
     
-    onConfigChange(config);
+    // Initialize
+    initDataSDK();
+    showView('login');
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9cad7872c0d92e42',t:'MTc3MDU3ODI4MS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</body>
 </html>
