@@ -657,33 +657,94 @@
     <div class="flex-1 overflow-auto p-4">
       <!-- Drivers Tab -->
       <div id="admin-drivers-tab">
+        <!-- Summary Stats -->
+        <div class="grid grid-cols-3 gap-2 mb-4">
+          <div class="gradient-card rounded-lg p-3 border border-slate-700/50 text-center">
+            <p id="admin-total-drivers" class="text-xl font-bold text-emerald-400">0</p>
+            <p class="text-slate-500 text-xs">إجمالي السائقين</p>
+          </div>
+          <div class="gradient-card rounded-lg p-3 border border-slate-700/50 text-center">
+            <p id="admin-active-drivers" class="text-xl font-bold text-blue-400">0</p>
+            <p class="text-slate-500 text-xs">نشط</p>
+          </div>
+          <div class="gradient-card rounded-lg p-3 border border-slate-700/50 text-center">
+            <p id="admin-total-rides" class="text-xl font-bold text-amber-400">0</p>
+            <p class="text-slate-500 text-xs">إجمالي الرحلات</p>
+          </div>
+        </div>
+        <p class="text-slate-400 text-xs font-bold mb-2">قائمة السائقين</p>
         <div id="admin-drivers-list" class="space-y-3">
           <!-- Drivers will be listed here -->
         </div>
       </div>
-      
+
       <!-- Rewards Tab -->
       <div id="admin-rewards-tab" class="view-hidden">
+        <div class="ai-hint rounded-lg p-3 mb-4">
+          <div class="flex items-start gap-2">
+            <span class="text-lg">🏆</span>
+            <div>
+              <p class="text-purple-300 text-xs font-bold">نظام المكافآت</p>
+              <p class="text-slate-300 text-xs mt-1">اختر مكافأة لمنحها للسائق بناءً على أدائه ونقاطه</p>
+            </div>
+          </div>
+        </div>
         <div id="admin-rewards-list" class="space-y-3">
           <!-- Reward options -->
         </div>
       </div>
-      
+
       <!-- Schedule Tab -->
       <div id="admin-schedule-tab" class="view-hidden">
-        <form onsubmit="saveSchedule(event)" class="space-y-4">
-          <div>
-            <label class="block text-slate-400 text-sm mb-2">اليوم</label>
-            <select class="input-field">
-              <option>الأحد</option>
-              <option>الاثنين</option>
-              <option>الثلاثاء</option>
-              <option>الأربعاء</option>
-              <option>الخميس</option>
-            </select>
+        <div class="ai-hint rounded-lg p-3 mb-4">
+          <div class="flex items-start gap-2">
+            <span class="text-lg">⚠️</span>
+            <div>
+              <p class="text-purple-300 text-xs font-bold">جدول الذروة</p>
+              <p class="text-slate-300 text-xs mt-1">حدد أوقات الضغط غير المتوقعة لتنبيه السائقين وزيادة التغطية</p>
+            </div>
           </div>
-          <button type="submit" class="w-full py-3 rounded-lg btn-primary text-white font-bold">حفظ</button>
-        </form>
+        </div>
+
+        <!-- Add Peak Entry Form -->
+        <div class="gradient-card rounded-lg p-4 border border-slate-700/50 mb-4">
+          <p class="text-white font-bold text-sm mb-3">إضافة وقت ذروة جديد</p>
+          <div class="space-y-3">
+            <div>
+              <label class="block text-slate-400 text-xs mb-1">اليوم</label>
+              <select id="peak-day" class="input-field text-sm">
+                <option value="الأحد">الأحد</option>
+                <option value="الاثنين">الاثنين</option>
+                <option value="الثلاثاء">الثلاثاء</option>
+                <option value="الأربعاء">الأربعاء</option>
+                <option value="الخميس">الخميس</option>
+              </select>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-slate-400 text-xs mb-1">وقت البداية</label>
+                <input id="peak-start-time" type="time" class="input-field text-sm" value="08:00">
+              </div>
+              <div>
+                <label class="block text-slate-400 text-xs mb-1">وقت النهاية</label>
+                <input id="peak-end-time" type="time" class="input-field text-sm" value="09:30">
+              </div>
+            </div>
+            <div>
+              <label class="block text-slate-400 text-xs mb-1">ملاحظة / السبب</label>
+              <input id="peak-note" type="text" class="input-field text-sm" placeholder="مثال: امتحان كلية الطب">
+            </div>
+            <button onclick="addPeakEntry()" class="w-full py-3 rounded-lg btn-primary text-white font-bold text-sm">
+              إضافة وقت ذروة
+            </button>
+          </div>
+        </div>
+
+        <!-- Peak Schedule List -->
+        <p class="text-slate-400 text-xs font-bold mb-2">أوقات الذروة المسجلة</p>
+        <div id="peak-schedule-list" class="space-y-3">
+          <!-- Peak entries will be listed here -->
+        </div>
       </div>
     </div>
   </div>
@@ -773,6 +834,25 @@
       { icon: '🛣️', title: 'المسار الأمثل', text: 'المسار المقترح: باب الصناعة ← باب الرئاسة ← المكتبة المركزية' },
       { icon: '⏰', title: 'تنبيه ذروة', text: 'ساعة انتهاء المحاضرات 12:30 - توجه لباب العلوم لأقصى عدد طلاب' },
       { icon: '💡', title: 'نصيحة ذكية', text: 'منطقة باب طب الأسنان بها أقل تغطية حالياً - فرصة لنقاط إضافية' }
+    ];
+
+    // Dummy drivers for admin panel
+    const dummyDrivers = [
+      { name: 'أحمد علي', user_type: 'bus-driver', car_model: 'Mercedes Sprinter 2021', car_plate: '1234 MOZ', phone: '07701234567', points: 285, rides: 42, status: 'active' },
+      { name: 'سارة خالد', user_type: 'car-driver', car_model: 'Toyota Corolla 2020', car_plate: '5678 NIN', phone: '07702345678', points: 210, rides: 31, status: 'active' },
+      { name: 'محمد حسن', user_type: 'bus-driver', car_model: 'Hyundai County 2019', car_plate: '9012 MOZ', phone: '07703456789', points: 175, rides: 28, status: 'active' },
+      { name: 'فاطمة عمر', user_type: 'car-driver', car_model: 'Kia Cerato 2022', car_plate: '3456 NIN', phone: '07704567890', points: 150, rides: 22, status: 'inactive' },
+      { name: 'علي محمود', user_type: 'bus-driver', car_model: 'Isuzu Journey 2020', car_plate: '7890 MOZ', phone: '07705678901', points: 130, rides: 19, status: 'active' },
+      { name: 'زينب أحمد', user_type: 'car-driver', car_model: 'Hyundai Elantra 2021', car_plate: '2345 NIN', phone: '07706789012', points: 95, rides: 14, status: 'active' },
+      { name: 'حسن جاسم', user_type: 'car-driver', car_model: 'Toyota Yaris 2019', car_plate: '6789 NIN', phone: '07707890123', points: 60, rides: 9, status: 'inactive' },
+      { name: 'مريم ناصر', user_type: 'bus-driver', car_model: 'Mercedes Vito 2022', car_plate: '0123 MOZ', phone: '07708901234', points: 45, rides: 6, status: 'active' }
+    ];
+
+    // Peak schedule entries
+    let peakScheduleEntries = [
+      { day: 'الأحد', time: '08:00', endTime: '09:30', note: 'بداية الدوام الصباحي' },
+      { day: 'الأحد', time: '12:30', endTime: '13:30', note: 'انتهاء المحاضرات الصباحية' },
+      { day: 'الثلاثاء', time: '14:00', endTime: '15:00', note: 'امتحان كلية الهندسة' }
     ];
     
     // ==================== SDK INITIALIZATION ====================
@@ -1421,25 +1501,25 @@
     }
     
     // ==================== ADMIN DASHBOARD ====================
-    
+
     function initAdminDashboard() {
       switchAdminTab('drivers');
       populateAdminDriversList();
     }
-    
+
     function switchAdminTab(tab) {
       document.getElementById('admin-drivers-tab').classList.add('view-hidden');
       document.getElementById('admin-rewards-tab').classList.add('view-hidden');
       document.getElementById('admin-schedule-tab').classList.add('view-hidden');
-      
+
       document.getElementById('admin-tab-drivers').classList.remove('bg-emerald-500/20', 'border-emerald-500', 'text-emerald-400');
       document.getElementById('admin-tab-rewards').classList.remove('bg-emerald-500/20', 'border-emerald-500', 'text-emerald-400');
       document.getElementById('admin-tab-schedule').classList.remove('bg-emerald-500/20', 'border-emerald-500', 'text-emerald-400');
-      
+
       document.getElementById('admin-tab-drivers').classList.add('bg-slate-800/50', 'border-slate-700/50', 'text-slate-400');
       document.getElementById('admin-tab-rewards').classList.add('bg-slate-800/50', 'border-slate-700/50', 'text-slate-400');
       document.getElementById('admin-tab-schedule').classList.add('bg-slate-800/50', 'border-slate-700/50', 'text-slate-400');
-      
+
       if (tab === 'drivers') {
         document.getElementById('admin-drivers-tab').classList.remove('view-hidden');
         document.getElementById('admin-tab-drivers').classList.remove('bg-slate-800/50', 'border-slate-700/50', 'text-slate-400');
@@ -1453,70 +1533,176 @@
         document.getElementById('admin-schedule-tab').classList.remove('view-hidden');
         document.getElementById('admin-tab-schedule').classList.remove('bg-slate-800/50', 'border-slate-700/50', 'text-slate-400');
         document.getElementById('admin-tab-schedule').classList.add('bg-emerald-500/20', 'border-emerald-500', 'text-emerald-400');
+        renderPeakSchedule();
       }
     }
-    
+
     function populateAdminDriversList() {
       const list = document.getElementById('admin-drivers-list');
       list.innerHTML = '';
-      
-      const drivers = allUsers.filter(u => u.user_type === 'car-driver' || u.user_type === 'bus-driver');
-      
-      drivers.forEach((driver, index) => {
+
+      // Update summary stats
+      const totalDrivers = dummyDrivers.length;
+      const activeDrivers = dummyDrivers.filter(d => d.status === 'active').length;
+      const totalRides = dummyDrivers.reduce((sum, d) => sum + d.rides, 0);
+      document.getElementById('admin-total-drivers').textContent = totalDrivers;
+      document.getElementById('admin-active-drivers').textContent = activeDrivers;
+      document.getElementById('admin-total-rides').textContent = totalRides;
+
+      // Sort by points descending
+      const sorted = [...dummyDrivers].sort((a, b) => b.points - a.points);
+
+      sorted.forEach((driver, index) => {
+        const rankEmoji = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '';
+        const statusColor = driver.status === 'active' ? 'text-emerald-400' : 'text-red-400';
+        const statusText = driver.status === 'active' ? 'نشط' : 'غير نشط';
+        const typeIcon = driver.user_type === 'bus-driver' ? '🚌' : '🚗';
+
         const card = document.createElement('div');
         card.className = 'gradient-card rounded-lg p-3 border border-slate-700/50';
-        card.innerHTML = `
-          <div class="flex items-center justify-between">
-            <div>
-              <p class="text-white font-bold">${driver.name}</p>
-              <p class="text-slate-500 text-xs">${driver.user_type === 'car-driver' ? '🚗' : '🚌'} ${driver.car_model}</p>
-            </div>
-            <div class="text-right">
-              <p class="text-amber-400 font-bold text-lg">${driver.points || 0}</p>
-              <p class="text-slate-500 text-xs">${driver.rides || 0} رحلة</p>
-            </div>
-          </div>
-        `;
+        card.innerHTML =
+          '<div class="flex items-center justify-between mb-2">' +
+            '<div class="flex items-center gap-2">' +
+              (rankEmoji ? '<span class="text-lg">' + rankEmoji + '</span>' : '') +
+              '<div>' +
+                '<p class="text-white font-bold text-sm">' + driver.name + '</p>' +
+                '<p class="text-slate-500 text-xs">' + typeIcon + ' ' + driver.car_model + '</p>' +
+              '</div>' +
+            '</div>' +
+            '<div class="text-left">' +
+              '<p class="text-amber-400 font-bold text-lg">' + driver.points + '</p>' +
+              '<p class="text-slate-500 text-xs">نقطة</p>' +
+            '</div>' +
+          '</div>' +
+          '<div class="flex items-center justify-between">' +
+            '<div class="flex items-center gap-3">' +
+              '<span class="text-slate-500 text-xs">' + driver.car_plate + '</span>' +
+              '<span class="text-slate-500 text-xs">📞 ' + driver.phone + '</span>' +
+            '</div>' +
+            '<div class="flex items-center gap-2">' +
+              '<span class="text-slate-400 text-xs">' + driver.rides + ' رحلة</span>' +
+              '<span class="w-2 h-2 rounded-full ' + (driver.status === 'active' ? 'bg-emerald-400' : 'bg-red-400') + '"></span>' +
+              '<span class="' + statusColor + ' text-xs">' + statusText + '</span>' +
+            '</div>' +
+          '</div>';
         list.appendChild(card);
       });
     }
-    
+
     function populateRewardsList() {
       const list = document.getElementById('admin-rewards-list');
       list.innerHTML = '';
-      
-      const drivers = allUsers.filter(u => u.user_type === 'car-driver' || u.user_type === 'bus-driver').sort((a, b) => (b.points || 0) - (a.points || 0));
-      const rewards = ['كتاب شكر', 'شهادة عمل تطوعي', 'مكافأة مالية'];
-      
-      drivers.forEach((driver) => {
+
+      const rewards = [
+        { name: 'كتاب شكر', icon: '📜', color: 'emerald' },
+        { name: 'شهادة عمل تطوعي', icon: '🎖️', color: 'blue' },        
+      ];
+
+      // Sort by points descending
+      const sorted = [...dummyDrivers].sort((a, b) => b.points - a.points);
+
+      sorted.forEach((driver) => {
+        const rankLabel = driver.points >= 200 ? '⭐ متميز' : driver.points >= 100 ? '✅ جيد' : '📊 مبتدئ';
+        const typeIcon = driver.user_type === 'bus-driver' ? '🚌' : '🚗';
+
         const card = document.createElement('div');
         card.className = 'gradient-card rounded-lg p-3 border border-slate-700/50';
-        card.innerHTML = `
-          <div class="flex items-center justify-between mb-3">
-            <div>
-              <p class="text-white font-bold">${driver.name}</p>
-              <p class="text-slate-500 text-xs">${driver.points || 0} نقطة</p>
-            </div>
-          </div>
-          <div class="flex gap-2">
-            ${rewards.map(reward => `
-              <button onclick="giveReward('${driver.name}', '${reward}')" class="flex-1 py-2 rounded-lg bg-emerald-500/20 border border-emerald-500/50 text-emerald-400 text-xs font-medium hover:bg-emerald-500/30">
-                ${reward}
-              </button>
-            `).join('')}
-          </div>
-        `;
+        card.innerHTML =
+          '<div class="flex items-center justify-between mb-3">' +
+            '<div>' +
+              '<p class="text-white font-bold text-sm">' + typeIcon + ' ' + driver.name + '</p>' +
+              '<p class="text-slate-500 text-xs">' + driver.points + ' نقطة - ' + driver.rides + ' رحلة</p>' +
+            '</div>' +
+            '<span class="text-xs px-2 py-1 rounded-full bg-slate-800 text-slate-300">' + rankLabel + '</span>' +
+          '</div>' +
+          '<div class="flex gap-2">' +
+            rewards.map(function(reward) {
+              return '<button onclick="giveReward(\'' + driver.name + '\', \'' + reward.name + '\')" class="flex-1 py-2 rounded-lg bg-' + reward.color + '-500/20 border border-' + reward.color + '-500/50 text-' + reward.color + '-400 text-xs font-medium hover:bg-' + reward.color + '-500/30">' +
+                reward.icon + ' ' + reward.name +
+              '</button>';
+            }).join('') +
+          '</div>';
         list.appendChild(card);
       });
     }
-    
+
     function giveReward(driverName, reward) {
-      alert(`تم منح "${driverName}" ${reward}`);
+      alert('تم منح "' + driverName + '" ' + reward + ' بنجاح!');
     }
-    
-    function saveSchedule(event) {
-      event.preventDefault();
-      alert('تم حفظ الجدول بنجاح!');
+
+    function addPeakEntry() {
+      const day = document.getElementById('peak-day').value;
+      const startTime = document.getElementById('peak-start-time').value;
+      const endTime = document.getElementById('peak-end-time').value;
+      const note = document.getElementById('peak-note').value.trim();
+
+      if (!startTime || !endTime) {
+        alert('الرجاء تحديد وقت البداية والنهاية');
+        return;
+      }
+
+      if (!note) {
+        alert('الرجاء إدخال ملاحظة أو سبب الذروة');
+        return;
+      }
+
+      peakScheduleEntries.push({ day, time: startTime, endTime, note });
+
+      // Clear form
+      document.getElementById('peak-note').value = '';
+
+      renderPeakSchedule();
+    }
+
+    function removePeakEntry(index) {
+      peakScheduleEntries.splice(index, 1);
+      renderPeakSchedule();
+    }
+
+    function renderPeakSchedule() {
+      const list = document.getElementById('peak-schedule-list');
+      if (!list) return;
+      list.innerHTML = '';
+
+      if (peakScheduleEntries.length === 0) {
+        list.innerHTML = '<p class="text-slate-500 text-sm text-center py-4">لا توجد أوقات ذروة مسجلة</p>';
+        return;
+      }
+
+      // Group entries by day
+      const days = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس'];
+      const grouped = {};
+      peakScheduleEntries.forEach((entry, i) => {
+        if (!grouped[entry.day]) grouped[entry.day] = [];
+        grouped[entry.day].push({ ...entry, originalIndex: i });
+      });
+
+      days.forEach(day => {
+        if (!grouped[day]) return;
+        const dayEntries = grouped[day];
+
+        const daySection = document.createElement('div');
+        daySection.className = 'mb-3';
+        daySection.innerHTML = '<p class="text-emerald-400 text-xs font-bold mb-2">📅 ' + day + '</p>';
+
+        dayEntries.forEach(entry => {
+          const entryDiv = document.createElement('div');
+          entryDiv.className = 'gradient-card rounded-lg p-3 border border-red-500/30 mb-2 flex items-center justify-between';
+          entryDiv.innerHTML =
+            '<div class="flex-1">' +
+              '<div class="flex items-center gap-2 mb-1">' +
+                '<span class="text-red-400 text-xs font-bold">🔴 ' + entry.time + ' - ' + entry.endTime + '</span>' +
+              '</div>' +
+              '<p class="text-slate-300 text-xs">' + entry.note + '</p>' +
+            '</div>' +
+            '<button onclick="removePeakEntry(' + entry.originalIndex + ')" class="w-8 h-8 rounded-full bg-red-500/20 flex items-center justify-center text-red-400 hover:bg-red-500/30">' +
+              '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>' +
+            '</button>';
+          daySection.appendChild(entryDiv);
+        });
+
+        list.appendChild(daySection);
+      });
     }
     
     // ==================== ELEMENT SDK ====================
