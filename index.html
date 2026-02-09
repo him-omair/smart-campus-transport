@@ -350,7 +350,7 @@
             </svg>
             طالب - مسح بطاقة الطالب
           </button>
-          <button onclick="selectRegType('car-driver')" class="w-full py-3 rounded-xl btn-secondary text-white font-bold flex items-center justify-center gap-3">
+          <button onclick="showDriverSubtypeSelection()" class="w-full py-3 rounded-xl btn-secondary text-white font-bold flex items-center justify-center gap-3">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
             </svg>
@@ -361,6 +361,30 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h8m-8 4h8m-6 4h4M5 3h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2z"></path>
             </svg>
             سائق حافلة - مسح بطاقة الحرم
+          </button>
+        </div>
+      </div>
+
+      <!-- Car Driver Subtype Selection -->
+      <div id="reg-driver-subtype" class="view-hidden mb-6">
+        <p class="text-slate-500 text-sm mb-3">هل أنت طالب أم موظف؟</p>
+        <div class="space-y-3">
+          <button onclick="selectDriverSubtype('student')" class="w-full py-4 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-500 text-white font-bold flex items-center justify-center gap-3">
+            <span class="text-2xl">🎓</span>
+            <div class="text-right">
+              <p class="text-base">طالب</p>
+              <p class="text-xs text-blue-100 font-normal">المكافآت: وجبة في المركز الطلابي أو درجات</p>
+            </div>
+          </button>
+          <button onclick="selectDriverSubtype('employee')" class="w-full py-4 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-bold flex items-center justify-center gap-3">
+            <span class="text-2xl">💼</span>
+            <div class="text-right">
+              <p class="text-base">موظف</p>
+              <p class="text-xs text-emerald-100 font-normal">المكافآت: كتاب شكر أو شهادة تطوع</p>
+            </div>
+          </button>
+          <button onclick="backToRegTypeSelection()" class="w-full py-2 rounded-xl bg-white border border-slate-200 text-slate-500 font-medium text-sm">
+            رجوع
           </button>
         </div>
       </div>
@@ -672,6 +696,18 @@
             <p class="text-slate-500 text-xs">عدد الرحلات</p>
             <p id="driver-profile-rides" class="text-slate-800">0</p>
           </div>
+          <div id="driver-subtype-info" class="view-hidden">
+            <p class="text-slate-500 text-xs">نوع السائق</p>
+            <p id="driver-profile-subtype" class="text-slate-800 font-bold">--</p>
+          </div>
+        </div>
+
+        <!-- Rewards Section -->
+        <div id="driver-rewards-section" class="view-hidden mt-4">
+          <p class="text-slate-500 text-xs font-bold mb-3">المكافآت المتاحة</p>
+          <div id="driver-rewards-list" class="space-y-3">
+            <!-- Populated by JS -->
+          </div>
         </div>
       </div>
     </div>
@@ -732,8 +768,26 @@
             </div>
           </div>
         </div>
-        <div id="admin-rewards-list" class="space-y-3">
-          <!-- Reward options -->
+        <!-- Student Rewards Section -->
+        <div class="mb-6">
+          <div class="flex items-center gap-2 mb-3">
+            <span class="text-lg">🎓</span>
+            <p class="text-slate-800 font-bold text-sm">مكافآت الطلاب</p>
+          </div>
+          <div id="admin-student-rewards-list" class="space-y-3">
+            <!-- Student reward options -->
+          </div>
+        </div>
+
+        <!-- Employee Rewards Section -->
+        <div class="mb-6">
+          <div class="flex items-center gap-2 mb-3">
+            <span class="text-lg">💼</span>
+            <p class="text-slate-800 font-bold text-sm">مكافآت الموظفين</p>
+          </div>
+          <div id="admin-employee-rewards-list" class="space-y-3">
+            <!-- Employee reward options -->
+          </div>
         </div>
       </div>
 
@@ -902,12 +956,12 @@
     // Dummy drivers for admin panel
     const dummyDrivers = [
       { name: 'أحمد علي', user_type: 'bus-driver', car_model: 'Mercedes Sprinter 2021', car_plate: '1234 MOZ', phone: '07701234567', points: 285, rides: 42, status: 'active' },
-      { name: 'سارة خالد', user_type: 'car-driver', car_model: 'Toyota Corolla 2020', car_plate: '5678 NIN', phone: '07702345678', points: 210, rides: 31, status: 'active' },
+      { name: 'سارة خالد', user_type: 'car-driver', driver_subtype: 'student', car_model: 'Toyota Corolla 2020', car_plate: '5678 NIN', phone: '07702345678', points: 210, rides: 31, status: 'active' },
       { name: 'محمد حسن', user_type: 'bus-driver', car_model: 'Hyundai County 2019', car_plate: '9012 MOZ', phone: '07703456789', points: 175, rides: 28, status: 'active' },
-      { name: 'فاطمة عمر', user_type: 'car-driver', car_model: 'Kia Cerato 2022', car_plate: '3456 NIN', phone: '07704567890', points: 150, rides: 22, status: 'inactive' },
+      { name: 'فاطمة عمر', user_type: 'car-driver', driver_subtype: 'employee', car_model: 'Kia Cerato 2022', car_plate: '3456 NIN', phone: '07704567890', points: 150, rides: 22, status: 'inactive' },
       { name: 'علي محمود', user_type: 'bus-driver', car_model: 'Isuzu Journey 2020', car_plate: '7890 MOZ', phone: '07705678901', points: 130, rides: 19, status: 'active' },
-      { name: 'زينب أحمد', user_type: 'car-driver', car_model: 'Hyundai Elantra 2021', car_plate: '2345 NIN', phone: '07706789012', points: 95, rides: 14, status: 'active' },
-      { name: 'حسن جاسم', user_type: 'car-driver', car_model: 'Toyota Yaris 2019', car_plate: '6789 NIN', phone: '07707890123', points: 60, rides: 9, status: 'inactive' },
+      { name: 'زينب أحمد', user_type: 'car-driver', driver_subtype: 'student', car_model: 'Hyundai Elantra 2021', car_plate: '2345 NIN', phone: '07706789012', points: 95, rides: 14, status: 'active' },
+      { name: 'حسن جاسم', user_type: 'car-driver', driver_subtype: 'employee', car_model: 'Toyota Yaris 2019', car_plate: '6789 NIN', phone: '07707890123', points: 60, rides: 9, status: 'inactive' },
       { name: 'مريم ناصر', user_type: 'bus-driver', car_model: 'Mercedes Vito 2022', car_plate: '0123 MOZ', phone: '07708901234', points: 45, rides: 6, status: 'active' }
     ];
 
@@ -1030,6 +1084,7 @@
     let html5QrCode = null;
     let qrScannedData = null;
     let selectedRegType = null;
+    let selectedDriverSubtype = null;
 
     function selectLoginUserType(type) {
       selectedLoginUserType = type;
@@ -1049,6 +1104,7 @@
     function selectRegType(type) {
       selectedRegType = type;
       document.getElementById('reg-type-selection').classList.add('view-hidden');
+      document.getElementById('reg-driver-subtype').classList.add('view-hidden');
       document.getElementById('reg-qr-section').classList.remove('view-hidden');
 
       if (type === 'student') {
@@ -1068,8 +1124,28 @@
       stopQrScanner();
       qrScannedData = null;
       selectedRegType = null;
+      selectedDriverSubtype = null;
+      document.getElementById('reg-type-selection').classList.remove('view-hidden');
+      document.getElementById('reg-driver-subtype').classList.add('view-hidden');
+      document.getElementById('reg-qr-section').classList.add('view-hidden');
       showView('login');
       resetLoginView();
+    }
+
+    function showDriverSubtypeSelection() {
+      document.getElementById('reg-type-selection').classList.add('view-hidden');
+      document.getElementById('reg-driver-subtype').classList.remove('view-hidden');
+    }
+
+    function backToRegTypeSelection() {
+      selectedDriverSubtype = null;
+      document.getElementById('reg-driver-subtype').classList.add('view-hidden');
+      document.getElementById('reg-type-selection').classList.remove('view-hidden');
+    }
+
+    function selectDriverSubtype(subtype) {
+      selectedDriverSubtype = subtype;
+      selectRegType('car-driver');
     }
 
     function startQrScanner() {
@@ -1224,6 +1300,9 @@
         userData.car_model = qrScannedData.car_model || '';
         userData.car_plate = qrScannedData.car_plate || '';
         userData.driver_license = qrScannedData.driver_license || '';
+        if (selectedRegType === 'car-driver' && selectedDriverSubtype) {
+          userData.driver_subtype = selectedDriverSubtype;
+        }
       }
 
       // Save to Data SDK if available
@@ -1243,6 +1322,7 @@
       stopQrScanner();
       qrScannedData = null;
       selectedRegType = null;
+      selectedDriverSubtype = null;
       showView('login');
       resetLoginView();
     }
@@ -1277,6 +1357,10 @@
         currentUser.car_plate = '1234 ABC';
         currentUser.driver_license = 'DL-' + Date.now();
       }
+      if (selectedLoginUserType === 'car-driver') {
+        // Default to student subtype for dummy login
+        currentUser.driver_subtype = 'student';
+      }
 
       // Navigate to appropriate dashboard
       if (selectedLoginUserType === 'student') {
@@ -1295,6 +1379,7 @@
       stopQrScanner();
       qrScannedData = null;
       selectedRegType = null;
+      selectedDriverSubtype = null;
       currentUser = null;
       selectedZone = null;
       selectedCustomLocation = null;
@@ -1844,22 +1929,73 @@
       document.getElementById('driver-profile-points').textContent = currentUser.points || 0;
       document.getElementById('driver-profile-rides').textContent = currentUser.rides || 0;
       document.getElementById('driver-points-badge').textContent = (currentUser.points || 0) + ' نقطة';
-      
+
       if (currentUser.user_type === 'car-driver') {
         document.getElementById('driver-car-info').innerHTML = `
           <p class="text-slate-400 text-xs">السيارة</p>
           <p class="text-white">${currentUser.car_model} - ${currentUser.car_plate}</p>
         `;
         document.getElementById('driver-title').textContent = 'لوحة سائق السيارة';
+
+        // Show subtype and rewards for car drivers
+        const subtype = currentUser.driver_subtype;
+        if (subtype) {
+          document.getElementById('driver-subtype-info').classList.remove('view-hidden');
+          document.getElementById('driver-profile-subtype').textContent = subtype === 'student' ? '🎓 طالب' : '💼 موظف';
+
+          document.getElementById('driver-rewards-section').classList.remove('view-hidden');
+          const rewardsList = document.getElementById('driver-rewards-list');
+          rewardsList.innerHTML = '';
+
+          const rewards = subtype === 'student'
+            ? [
+                { icon: '🍽️', name: 'وجبة في المركز الطلابي', cost: 50, desc: 'وجبة مجانية في مطعم المركز الطلابي' },
+                { icon: '📝', name: 'درجات إضافية', cost: 100, desc: 'درجات إضافية على مادة اختيارية' }
+              ]
+            : [
+                { icon: '📜', name: 'كتاب شكر', cost: 50, desc: 'كتاب شكر رسمي من رئاسة الجامعة' },
+                { icon: '🎖️', name: 'شهادة تطوع', cost: 100, desc: 'شهادة تطوع معتمدة من الجامعة' }
+              ];
+
+          rewards.forEach(reward => {
+            const points = currentUser.points || 0;
+            const canRedeem = points >= reward.cost;
+            const card = document.createElement('div');
+            card.className = 'gradient-card rounded-lg p-4 flex items-center justify-between';
+            card.innerHTML =
+              '<div class="flex items-center gap-3">' +
+                '<span class="text-2xl">' + reward.icon + '</span>' +
+                '<div>' +
+                  '<p class="text-slate-800 font-bold text-sm">' + reward.name + '</p>' +
+                  '<p class="text-slate-500 text-xs">' + reward.desc + '</p>' +
+                  '<p class="text-amber-500 text-xs font-bold mt-1">' + reward.cost + ' نقطة</p>' +
+                '</div>' +
+              '</div>' +
+              '<button onclick="redeemReward(\'' + reward.name + '\', ' + reward.cost + ')" class="px-3 py-2 rounded-lg text-white font-bold text-xs ' + (canRedeem ? 'btn-primary' : 'bg-slate-300 cursor-not-allowed') + '" ' + (canRedeem ? '' : 'disabled') + '>' +
+                (canRedeem ? 'استبدال' : 'نقاط غير كافية') +
+              '</button>';
+            rewardsList.appendChild(card);
+          });
+        }
       } else {
         document.getElementById('driver-car-info').innerHTML = `
           <p class="text-slate-400 text-xs">الحافلة</p>
           <p class="text-white">${currentUser.car_model} - ${currentUser.car_plate}</p>
         `;
         document.getElementById('driver-title').textContent = 'لوحة سائق الحافلة';
+        document.getElementById('driver-subtype-info').classList.add('view-hidden');
+        document.getElementById('driver-rewards-section').classList.add('view-hidden');
       }
-      
+
       switchDriverTab('map');
+    }
+
+    function redeemReward(rewardName, cost) {
+      if (!currentUser || (currentUser.points || 0) < cost) return;
+      currentUser.points -= cost;
+      alert('تم استبدال "' + rewardName + '" بنجاح! النقاط المتبقية: ' + currentUser.points);
+      // Refresh the dashboard to update points and button states
+      initDriverDashboard();
     }
     
     function switchDriverTab(tab) {
@@ -2134,6 +2270,7 @@
         const rankEmoji = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : (index + 1);
         const typeIcon = driver.user_type === 'bus-driver' ? '🚌' : '🚗';
         const statusDot = driver.status === 'active' ? 'bg-emerald-400' : 'bg-red-400';
+        const subtypeLabel = driver.driver_subtype ? (driver.driver_subtype === 'student' ? ' · 🎓' : ' · 💼') : '';
 
         const row = document.createElement('div');
         row.className = 'flex items-center justify-between py-3 border-b border-slate-100 last:border-0';
@@ -2142,7 +2279,7 @@
             '<span class="w-8 text-center font-bold text-lg ' + (index < 3 ? 'text-amber-500' : 'text-slate-400') + '">' + rankEmoji + '</span>' +
             '<div>' +
               '<p class="text-slate-800 font-bold text-sm">' + driver.name + '</p>' +
-              '<p class="text-slate-500 text-xs">' + typeIcon + ' ' + driver.car_model + ' &bull; ' + driver.rides + ' رحلة</p>' +
+              '<p class="text-slate-500 text-xs">' + typeIcon + ' ' + driver.car_model + subtypeLabel + ' &bull; ' + driver.rides + ' رحلة</p>' +
             '</div>' +
           '</div>' +
           '<div class="flex items-center gap-2">' +
@@ -2246,39 +2383,59 @@
     }
 
     function populateRewardsList() {
-      const list = document.getElementById('admin-rewards-list');
-      list.innerHTML = '';
+      const studentList = document.getElementById('admin-student-rewards-list');
+      const employeeList = document.getElementById('admin-employee-rewards-list');
+      studentList.innerHTML = '';
+      employeeList.innerHTML = '';
 
-      const rewards = [
-        { name: 'كتاب شكر', icon: '📜', color: 'emerald' },
-        { name: 'شهادة عمل تطوعي', icon: '🎖️', color: 'blue' },        
+      const studentRewards = [
+        { name: 'وجبة في المركز الطلابي', icon: '🍽️', color: 'orange' },
+        { name: 'درجات إضافية', icon: '📝', color: 'blue' }
       ];
 
-      // Sort by points descending
-      const sorted = [...dummyDrivers].sort((a, b) => b.points - a.points);
+      const employeeRewards = [
+        { name: 'كتاب شكر', icon: '📜', color: 'emerald' },
+        { name: 'شهادة تطوع', icon: '🎖️', color: 'purple' }
+      ];
 
-      sorted.forEach((driver) => {
-        const rankLabel = driver.points >= 200 ? '⭐ متميز' : driver.points >= 100 ? '✅ جيد' : '📊 مبتدئ';
-        const typeIcon = driver.user_type === 'bus-driver' ? '🚌' : '🚗';
-        const card = document.createElement('div');
-        card.className = 'gradient-card rounded-lg p-3';
-        card.innerHTML =
-          '<div class="flex items-center justify-between mb-3">' +
-            '<div>' +
-              '<p class="text-slate-800 font-bold text-sm">' + typeIcon + ' ' + driver.name + '</p>' +
-              '<p class="text-slate-500 text-xs">' + driver.points + ' نقطة - ' + driver.rides + ' رحلة</p>' +
+      const studentDrivers = [...dummyDrivers]
+        .filter(d => d.user_type === 'car-driver' && d.driver_subtype === 'student')
+        .sort((a, b) => b.points - a.points);
+
+      const employeeDrivers = [...dummyDrivers]
+        .filter(d => d.user_type === 'car-driver' && d.driver_subtype === 'employee')
+        .sort((a, b) => b.points - a.points);
+
+      function renderDriverRewards(drivers, rewards, container) {
+        if (drivers.length === 0) {
+          container.innerHTML = '<p class="text-slate-500 text-sm text-center py-4">لا يوجد سائقون في هذه الفئة</p>';
+          return;
+        }
+        drivers.forEach(function(driver) {
+          var rankLabel = driver.points >= 200 ? '⭐ متميز' : driver.points >= 100 ? '✅ جيد' : '📊 مبتدئ';
+          var card = document.createElement('div');
+          card.className = 'gradient-card rounded-lg p-3';
+          card.innerHTML =
+            '<div class="flex items-center justify-between mb-3">' +
+              '<div>' +
+                '<p class="text-slate-800 font-bold text-sm">🚗 ' + driver.name + '</p>' +
+                '<p class="text-slate-500 text-xs">' + driver.points + ' نقطة - ' + driver.rides + ' رحلة</p>' +
+              '</div>' +
+              '<span class="text-xs px-2 py-1 rounded-full bg-slate-800 text-slate-300">' + rankLabel + '</span>' +
             '</div>' +
-            '<span class="text-xs px-2 py-1 rounded-full bg-slate-800 text-slate-300">' + rankLabel + '</span>' +
-          '</div>' +
-          '<div class="flex gap-2">' +
-            rewards.map(function(reward) {
-              return '<button onclick="giveReward(\'' + driver.name + '\', \'' + reward.name + '\')" class="flex-1 py-2 rounded-lg bg-' + reward.color + '-500/20 border border-' + reward.color + '-500/50 text-' + reward.color + '-400 text-xs font-medium hover:bg-' + reward.color + '-500/30">' +
-                reward.icon + ' ' + reward.name +
-              '</button>';
-            }).join('') +
-          '</div>';
-        list.appendChild(card);
-      });
+            '<div class="flex gap-2">' +
+              rewards.map(function(reward) {
+                return '<button onclick="giveReward(\'' + driver.name + '\', \'' + reward.name + '\')" class="flex-1 py-2 rounded-lg bg-' + reward.color + '-500/20 border border-' + reward.color + '-500/50 text-' + reward.color + '-400 text-xs font-medium hover:bg-' + reward.color + '-500/30">' +
+                  reward.icon + ' ' + reward.name +
+                '</button>';
+              }).join('') +
+            '</div>';
+          container.appendChild(card);
+        });
+      }
+
+      renderDriverRewards(studentDrivers, studentRewards, studentList);
+      renderDriverRewards(employeeDrivers, employeeRewards, employeeList);
     }
 
     function giveReward(driverName, reward) {
